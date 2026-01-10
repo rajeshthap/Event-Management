@@ -3,7 +3,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "@fontsource/poppins";
 import "bootstrap-icons/font/bootstrap-icons.css";
-// import "../src/custom/style.css";
+import "../src/componets/custom/style.css";
 import {
   Routes,
   Route,
