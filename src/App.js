@@ -16,6 +16,10 @@ import {
 import Home from "./componets/pages/Home";
 import Footer from "./componets/footer/Footer";
 import NavBar from "./componets/navbar/NavBar";
+import AboutUs from "./componets/pages/AboutUs"; 
+import Admissions from "./componets/pages/about_us/Admissions";
+import Faculty from "./componets/pages/about_us/Faculty";
+
 // import NavBar from "./componets/topnav/NavBar";
 // import Footer from "./componets/footer/Footer";
 // import Dashboard from "./componets/dash_board/Dashboard";
@@ -36,6 +40,9 @@ function App() {
           <Routes>
             {/* Public Route */}
             <Route path="/" element={<Home />} />
+            <Route path="/AboutUs" element={<AboutUs />} />
+            <Route path="/Admissions" element={<Admissions />} />
+            <Route path="/Faculty" element={<Faculty />} />
             
           
           </Routes>

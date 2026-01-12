@@ -1,5 +1,6 @@
 import React, { useState } from 'react'; // 1. Import useState
 import "../../assets/css/mainstyle.css"
+import { Link } from 'react-router-dom';
 
 function NavBar() {
   // 2. State to control the main mobile navigation menu
@@ -26,71 +27,71 @@ function NavBar() {
       <header id="header" className={`header d-flex align-items-center sticky-top ${isMenuOpen ? 'mobile-nav-active' : ''}`}>
         <div className="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-end">
 
-          <a href="/" className="logo d-flex align-items-center me-auto">
+          <Link to="/" className="logo d-flex align-items-center me-auto">
             {/* <img src="assets/img/logo.webp" alt="" /> */}
             <h1 className="sitename">Info Entertainment</h1>
-          </a>
+          </Link>
 
           <nav id="navmenu" className={`navmenu ${isMenuOpen ? 'navmenu-active' : ''}`}>
             <ul>
-              <li><a href="index.html" className="active">Home</a></li>
+              <li><Link to="/" className="active">Home</Link></li>
               
               {/* 6. Add onClick to the dropdown trigger */}
               <li className={`dropdown ${openDropdowns['about'] ? 'dropdown-active' : ''}`}>
-                <a href="#about" onClick={(e) => { e.preventDefault(); toggleDropdown('about'); }}>
+                <Link to="#about" onClick={(e) => { e.preventDefault(); toggleDropdown('about'); }}>
                   <span>About</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['about'] ? 'rotate-icon' : ''}`}></i>
-                </a>
+                </Link>
                 <ul>
-                  <li><a href="about.html">About Us</a></li>
-                  <li><a href="admissions.html">Admissions</a></li>
-                  <li><a href="academics.html">Academics</a></li>
-                  <li><a href="faculty-staff.html">Faculty &amp; Staff</a></li>
-                  <li><a href="campus-facilities.html">Campus &amp; Facilities</a></li>
+                  <li><Link to="/AboutUs">About Us</Link></li>
+                  <li><Link to="/Admissions">Admissions</Link></li>
+                  <li><Link to="academics.html">Academics</Link></li>
+                  <li><Link to="/Faculty">Faculty &amp; Staff</Link></li>
+                  <li><Link to="campus-facilities.html">Campus &amp; Facilities</Link></li>
                 </ul>
               </li>
 
-              <li><a href="students-life.html">Schedules</a></li>
-              <li><a href="events.html">Speakers</a></li>
-              <li><a href="alumni.html">Gallery</a></li>
+              <li><Link to="students-life.html">Schedules</Link></li>
+              <li><Link to="events.html">Speakers</Link></li>
+              <li><Link to="alumni.html">Gallery</Link></li>
 
               <li className={`dropdown ${openDropdowns['sponsors'] ? 'dropdown-active' : ''}`}>
-                <a href="#sponsors" onClick={(e) => { e.preventDefault(); toggleDropdown('sponsors'); }}>
+                <Link to="#sponsors" onClick={(e) => { e.preventDefault(); toggleDropdown('sponsors'); }}>
                   <span>Sponsors</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['sponsors'] ? 'rotate-icon' : ''}`}></i>
-                </a>
+                </Link>
                 <ul>
-                  <li><a href="news-details.html">Speakers</a></li>
-                  <li><a href="event-details.html">Event Details</a></li>
-                  <li><a href="privacy.html">Gallery</a></li>
-                  <li><a href="terms-of-service.html">Sponsors</a></li>
-                  <li><a href="404.html">Error 404</a></li>
-                  <li><a href="starter-page.html">Contact</a></li>
+                  <li><Link to="news-details.html">Speakers</Link></li>
+                  <li><Link to="event-details.html">Event Details</Link></li>
+                  <li><Link to="privacy.html">Gallery</Link></li>
+                  <li><Link to="terms-of-service.html">Sponsors</Link></li>
+                  <li><Link to="404.html">Error 404</Link></li>
+                  <li><Link to="starter-page.html">Contact</Link></li>
                 </ul>
               </li>
 
               <li className={`dropdown ${openDropdowns['pricing'] ? 'dropdown-active' : ''}`}>
-                <a href="#pricing" onClick={(e) => { e.preventDefault(); toggleDropdown('pricing'); }}>
+                <Link to="#pricing" onClick={(e) => { e.preventDefault(); toggleDropdown('pricing'); }}>
                   <span>pricing</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['pricing'] ? 'rotate-icon' : ''}`}></i>
-                </a>
+                </Link>
                 <ul>
-                  <li><a href="#">Dropdown 1</a></li>
+                  <li><Link to="#">Dropdown 1</Link></li>
                   <li className="dropdown">
-                    <a href="#deep-dropdown" onClick={(e) => { e.preventDefault(); toggleDropdown('deep-dropdown'); }}>
+                    <Link to="#deep-dropdown" onClick={(e) => { e.preventDefault(); toggleDropdown('deep-dropdown'); }}>
                       <span>Deep Dropdown</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['deep-dropdown'] ? 'rotate-icon' : ''}`}></i>
-                    </a>
+                    </Link>
                     <ul className={openDropdowns['deep-dropdown'] ? 'dropdown-active' : ''}>
-                      <li><a href="#">Deep Dropdown 1</a></li>
-                      <li><a href="#">Deep Dropdown 2</a></li>
-                      <li><a href="#">Deep Dropdown 3</a></li>
-                      <li><a href="#">Deep Dropdown 4</a></li>
-                      <li><a href="#">Deep Dropdown 5</a></li>
+                      <li><Link to="#">Deep Dropdown 1</Link></li>
+                      <li><Link to="#">Deep Dropdown 2</Link></li>
+                      <li><Link to="#">Deep Dropdown 3</Link></li>
+                      <li><Link to="#">Deep Dropdown 4</Link></li>
+                      <li><Link to="#">Deep Dropdown 5</Link></li>
                     </ul>
                   </li>
-                  <li><a href="#">Dropdown 2</a></li>
-                  <li><a href="#">Dropdown 3</a></li>
-                  <li><a href="#">Dropdown 4</a></li>
+                  <li><Link to="#">Dropdown 2</Link></li>
+                  <li><Link to="#">Dropdown 3</Link></li>
+                  <li><Link to="#">Dropdown 4</Link></li>
                 </ul>
               </li>
-              <li><a href="contact.html">Contact</a></li>
+              <li><Link to="contact.html">Contact</Link></li>
             </ul>
             {/* 7. Add onClick to the mobile toggle button and change icon dynamically */}
             <i 

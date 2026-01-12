@@ -70,14 +70,55 @@ body {
 }
 
 
+/*
+ * ==================================================
+ * Fix for Testimonials Swiper Layout
+ * ==================================================
+ */
 
+/*
+ * ==================================================
+ * REQUIRED CSS for Testimonials Swiper
+ * ==================================================
+ */
 
+/* Ensure the slider container has a position for the navigation buttons */
+.testimonial-slider {
+  position: relative;
+}
 
+/* This ensures the Swiper wrapper uses flexbox to align slides. */
+.testimonial-slider .swiper-wrapper {
+  display: flex;
+  align-items: stretch; /* Makes all cards in a row the same height */
+}
 
+/* This ensures each slide behaves correctly. */
+.testimonial-slider .swiper-slide {
 
+  flex-shrink: 0;
+}
 
+/* This makes the inner card fill the slide area. */
+.testimonial-slider .testimonial-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
+/* --- IMPORTANT: Make the navigation buttons visible --- */
+.testimonial-slider .swiper-button-prev,
+.testimonial-slider .swiper-button-next {
+  color: #fff; /* Change to a color that is visible on your background */
+  background-color: rgba(0, 0, 0, 0.3); /* Add a semi-transparent background */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  margin-top: -22px; /* Center the button vertically */
+}
 
-
-
-
+.testimonial-slider .swiper-button-prev::after,
+.testimonial-slider .swiper-button-next::after {
+  font-size: 20px; /* Adjust arrow size */
+}

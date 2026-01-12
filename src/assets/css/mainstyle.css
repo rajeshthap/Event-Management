@@ -52,7 +52,16 @@
 }
 
 /* Color Presets - These classes override global colors when applied to any section or element, providing reuse of the sam color scheme. */
-
+.swiper {
+margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    overflow: hidden;
+    list-style: none;
+    padding: 0;
+    z-index: 1;
+    display: block;
+}
 .light-background {
   --background-color: #e6edf0;
   --surface-color: #ffffff;
