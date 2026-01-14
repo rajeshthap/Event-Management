@@ -455,6 +455,38 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Col>
             </Row>
 
+               <Form.Group className="mb-3">
+              <Form.Label>Talent Scope *</Form.Label>
+              <Dropdown autoClose="outside">
+                <Dropdown.Toggle variant="outline-secondary" id="talent-scope-dropdown">
+                  Select Your Talents
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {talentOptions.map((talent, index) => (
+                    <Dropdown.Item key={index} as="div">
+                      <Form.Check
+                        type="checkbox"
+                        id={`talent-${index}`}
+                        label={talent}
+                        checked={formData.talent_scope.includes(talent)}
+                        onChange={() => handleTalentScopeChange(talent)}
+                      />
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+              {formData.talent_scope.length > 0 && (
+                <div className="mt-2">
+                  <small className="text-muted">Selected: {formData.talent_scope.join(', ')}</small>
+                </div>
+              )}
+              {errors.talent_scope && (
+                <div className="text-danger mt-1" >
+                  <small>{errors.talent_scope}</small>
+                </div>
+              )}
+            </Form.Group>
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -491,20 +523,46 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Col>
             </Row>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Address *</Form.Label>
-              <Form.Control
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                isInvalid={!!errors.address}
-                placeholder="Enter your full address"
-              />
-              <Form.Control.Feedback type="invalid" className='val-error'>
-                {errors.address}
-              </Form.Control.Feedback>
+
+              <Form.Group className="mb-3">
+              <Form.Label>Portfolio Links *</Form.Label>
+              {formData.portfolio_links.map((link, index) => (
+                <div key={index} className="d-flex mb-2">
+                  <Form.Control
+                    type="url"
+                    value={link}
+                    onChange={(e) => handlePortfolioLinkChange(index, e.target.value)}
+                    isInvalid={!!getPortfolioLinkError(index)}
+                    placeholder="https://example.com/portfolio"
+                  />
+                  {formData.portfolio_links.length > 1 && (
+                    <Button
+                      variant="outline-danger"
+                      className="ms-2"
+                      onClick={() => removePortfolioLink(index)}
+                    >
+                      ×
+                    </Button>
+                  )}
+                  {getPortfolioLinkError(index) && (
+                    <Form.Control.Feedback type="invalid" className="d-block val-error" >
+                      {getPortfolioLinkError(index)}
+                    </Form.Control.Feedback>
+                  )}
+                </div>
+              ))}
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={addPortfolioLink}
+                className="mt-2"
+              >
+                + Add Another Link
+              </Button>
+             
             </Form.Group>
+
+          
 
             <Row>
               <Col md={4}>
@@ -557,75 +615,22 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Col>
             </Row>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Talent Scope *</Form.Label>
-              <Dropdown autoClose="outside">
-                <Dropdown.Toggle variant="outline-secondary" id="talent-scope-dropdown">
-                  Select Your Talents
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  {talentOptions.map((talent, index) => (
-                    <Dropdown.Item key={index} as="div">
-                      <Form.Check
-                        type="checkbox"
-                        id={`talent-${index}`}
-                        label={talent}
-                        checked={formData.talent_scope.includes(talent)}
-                        onChange={() => handleTalentScopeChange(talent)}
-                      />
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-              {formData.talent_scope.length > 0 && (
-                <div className="mt-2">
-                  <small className="text-muted">Selected: {formData.talent_scope.join(', ')}</small>
-                </div>
-              )}
-              {errors.talent_scope && (
-                <div className="text-danger mt-1" >
-                  <small>{errors.talent_scope}</small>
-                </div>
-              )}
+         
+               <Form.Group className="mb-3">
+              <Form.Label>Address *</Form.Label>
+              <Form.Control
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                isInvalid={!!errors.address}
+                placeholder="Enter your full address"
+              />
+              <Form.Control.Feedback type="invalid" className='val-error'>
+                {errors.address}
+              </Form.Control.Feedback>
             </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Portfolio Links *</Form.Label>
-              {formData.portfolio_links.map((link, index) => (
-                <div key={index} className="d-flex mb-2">
-                  <Form.Control
-                    type="url"
-                    value={link}
-                    onChange={(e) => handlePortfolioLinkChange(index, e.target.value)}
-                    isInvalid={!!getPortfolioLinkError(index)}
-                    placeholder="https://example.com/portfolio"
-                  />
-                  {formData.portfolio_links.length > 1 && (
-                    <Button
-                      variant="outline-danger"
-                      className="ms-2"
-                      onClick={() => removePortfolioLink(index)}
-                    >
-                      ×
-                    </Button>
-                  )}
-                  {getPortfolioLinkError(index) && (
-                    <Form.Control.Feedback type="invalid" className="d-block val-error" >
-                      {getPortfolioLinkError(index)}
-                    </Form.Control.Feedback>
-                  )}
-                </div>
-              ))}
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={addPortfolioLink}
-                className="mt-2"
-              >
-                + Add Another Link
-              </Button>
-             
-            </Form.Group>
+          
 
             <Form.Group className="mb-3">
               <Form.Label>Introduction *</Form.Label>
