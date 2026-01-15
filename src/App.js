@@ -23,6 +23,7 @@ import RegistrationModal from "./componets/pages/RegistrationModal";
 import DashBoardHeader from "./componets/event_panel/DashBoardHeader";
 import Dashboard from "./componets/event_panel/DashBoard";
 import Login from "./componets/login/Login";
+import UserDashBoard from "./componets/user_dashboard/UserDashBoard";
 
 // import NavBar from "./componets/topnav/NavBar";
 // import Footer from "./componets/footer/Footer";
@@ -52,6 +53,7 @@ function App() {
             <Route path="/Faculty" element={<Faculty />} />
              <Route path="/RegistrationModal" element={<RegistrationModal />} />
               <Route path="/Login" element={<Login />} />
+              <Route path="/UserDashBoard" element={<UserDashBoard />} />
           
           </Routes>
         </main>

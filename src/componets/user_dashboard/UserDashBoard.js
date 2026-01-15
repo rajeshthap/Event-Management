@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Container } from "react-bootstrap";
 
 import "../../assets/css/dashboard.css";
-import DashBoardHeader from "./DashBoardHeader";
-import LeftNav  from "./LeftNav";
+import UserLeftNav from "./UserLeftNav";
+import UserHeader from "./UserHeader";
 // import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -33,7 +33,7 @@ const UserDashBoard = () => {
     <>
     <div className="dashboard-container">
       {/* Left Sidebar */}
-      <LeftNav
+      <UserLeftNav
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         isMobile={isMobile}
@@ -42,7 +42,7 @@ const UserDashBoard = () => {
 
       {/* Main Content */}
       <div className="main-content-dash">
-        <DashBoardHeader toggleSidebar={toggleSidebar} />
+        <UserHeader toggleSidebar={toggleSidebar} />
 
         <Container fluid className="dashboard-body dashboard-main-container">
           <h1 className="page-title">Dashboard</h1>
