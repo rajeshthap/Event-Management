@@ -409,6 +409,11 @@ const RegistrationModal = ({ show, handleClose }) => {
           console.log(`${key}:`, value);
         }
 
+        // Add this right before the API call in handleRegistrationSubmit
+console.log('Phone value being sent:', formData.phone);
+console.log('Phone type:', typeof formData.phone);
+console.log('Phone length:', formData.phone.length);
+
         // API call
         const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/reg-user/', {
           method: 'POST',
