@@ -106,7 +106,19 @@ body {
   display: flex;
   flex-direction: column;
 }
-
+.login-btn{
+  font-size: 12px;
+  background-color: #ffff !important;
+  border: 1px solid #ffff  !important;
+  color: #000000;
+   margin-top: 8px !important;
+}
+.login-btn:hover{
+  background-color: #0d77cb !important;
+  border: 1px solid #0d77cb  !important;
+  color: #ffffff;
+  margin-top: 8px !important;
+} 
 /* --- IMPORTANT: Make the navigation buttons visible --- */
 .testimonial-slider .swiper-button-prev,
 .testimonial-slider .swiper-button-next {

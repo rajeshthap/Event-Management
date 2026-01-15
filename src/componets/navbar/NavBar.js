@@ -71,7 +71,7 @@ function NavBar() {
              
           </ul>
           <ul>
-            <li><Button variant="primary" href="/DashBoard">Login</Button></li>
+            <li><Button variant="primary" className="login-btn" href="/DashBoard">Login</Button></li>
           </ul>
            </div>
         </container>

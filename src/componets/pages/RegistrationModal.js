@@ -10,10 +10,12 @@ const RegistrationModal = ({ show, handleClose }) => {
   
   // Form state
   const [formData, setFormData] = useState({
+    user_type: 'individual', // Default to individual
+    team_name: '', // Empty string for organization name
     profile_image: null,
     profile_image_preview: '',
-    first_name: '',
-    last_name: '',
+    full_name: '',
+    gender: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -25,7 +27,17 @@ const RegistrationModal = ({ show, handleClose }) => {
     address: '',
     introduction: '',
     talent_scope: [],
+    social_media_links: [''],
+    additional_links: [''],
     portfolio_links: [''],
+    // Certificate fields
+    selected_certificates: [], // To track which certificates are selected
+    national_level_certificate: null,
+    internation_level_certificate_award: null,
+    state_level_certificate: null,
+    district_level_certificate: null,
+    college_level_certificate: null,
+    other_certificate: null,
     agreeTerms: false
   });
 
@@ -45,8 +57,26 @@ const RegistrationModal = ({ show, handleClose }) => {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [apiResponse, setApiResponse] = useState(null); // To store detailed API response for debugging
   
-  // Ref for file input
+  // Ref for file inputs
   const fileInputRef = useRef(null);
+  const certificateFileRefs = {
+    national_level_certificate: useRef(null),
+    internation_level_certificate_award: useRef(null),
+    state_level_certificate: useRef(null),
+    district_level_certificate: useRef(null),
+    college_level_certificate: useRef(null),
+    other_certificate: useRef(null)
+  };
+
+  // Certificate options
+  const certificateOptions = [
+    { id: 'national_level_certificate', label: 'National Level Certificate' },
+    { id: 'internation_level_certificate_award', label: 'International Level Certificate/Award' },
+    { id: 'state_level_certificate', label: 'State Level Certificate' },
+    { id: 'district_level_certificate', label: 'District Level Certificate' },
+    { id: 'college_level_certificate', label: 'College Level Certificate' },
+    { id: 'other_certificate', label: 'Other Certificate' }
+  ];
 
   // Talent scope options
   const talentOptions = [
@@ -56,30 +86,57 @@ const RegistrationModal = ({ show, handleClose }) => {
     'Music',
     'Creative Writing',
     'Painting',
-    'Photography'
+    'Photography',
+    'Python',
+    'Django',
+    'React',
+    'Node.js'
   ];
 
   // Form validation for registration
   const validateForm = () => {
     const newErrors = {};
 
+    // Team name validation (only for organization)
+    if (formData.user_type === 'organization' && !formData.team_name.trim()) {
+      newErrors.team_name = 'Team name is required for organization registration';
+    }
+
     // Profile image validation
     if (!formData.profile_image) {
       newErrors.profile_image = 'Profile image is required';
     }
 
-    // First name validation - only letters and spaces
-    if (!formData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
-    } else if (!/^[a-zA-Z\s]+$/.test(formData.first_name)) {
-      newErrors.first_name = 'First name should only contain letters and spaces';
+    // Full name validation
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = 'Full name is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.full_name)) {
+      newErrors.full_name = 'Full name should only contain letters and spaces';
     }
 
-    // Last name validation - only letters and spaces
-    if (!formData.last_name.trim()) {
-      newErrors.last_name = 'Last name is required';
-    } else if (!/^[a-zA-Z\s]+$/.test(formData.last_name)) {
-      newErrors.last_name = 'Last name should only contain letters and spaces';
+    // Gender validation
+    if (!formData.gender) {
+      newErrors.gender = 'Please select your gender';
+    }
+
+    // Date of birth validation - no future dates (only for individual)
+    if (formData.user_type === 'individual') {
+      if (!formData.date_of_birth) {
+        newErrors.date_of_birth = 'Date of birth is required';
+      } else {
+        const dob = new Date(formData.date_of_birth);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set time to beginning of day for accurate comparison
+        
+        if (dob > today) {
+          newErrors.date_of_birth = 'Date of birth cannot be in the future';
+        } else {
+          const age = Math.floor((today - dob) / (365.25 * 24 * 60 * 60 * 1000));
+          if (age < 13) {
+            newErrors.date_of_birth = 'You must be at least 13 years old to register';
+          }
+        }
+      }
     }
 
     // Email validation
@@ -103,24 +160,6 @@ const RegistrationModal = ({ show, handleClose }) => {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    // Date of birth validation - no future dates
-    if (!formData.date_of_birth) {
-      newErrors.date_of_birth = 'Date of birth is required';
-    } else {
-      const dob = new Date(formData.date_of_birth);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set time to beginning of day for accurate comparison
-      
-      if (dob > today) {
-        newErrors.date_of_birth = 'Date of birth cannot be in the future';
-      } else {
-        const age = Math.floor((today - dob) / (365.25 * 24 * 60 * 60 * 1000));
-        if (age < 13) {
-          newErrors.date_of_birth = 'You must be at least 13 years old to register';
-        }
-      }
     }
 
     // Country validation
@@ -155,11 +194,39 @@ const RegistrationModal = ({ show, handleClose }) => {
       newErrors.talent_scope = 'Please select at least one talent scope';
     }
 
+    // Social media links validation
+    const validSocialMediaLinks = formData.social_media_links.filter(link => link.trim() !== '');
+    if (validSocialMediaLinks.length === 0) {
+      newErrors.social_media_links = 'Please add at least one social media link';
+    } else {
+      const linkErrors = [];
+      validSocialMediaLinks.forEach((link, index) => {
+        if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(link)) {
+          linkErrors[index] = 'Please enter a valid URL';
+        }
+      });
+      if (linkErrors.length > 0) {
+        newErrors.social_media_links = linkErrors;
+      }
+    }
+
+    // Additional links validation
+    const validAdditionalLinks = formData.additional_links.filter(link => link.trim() !== '');
+    if (validAdditionalLinks.length > 0) {
+      const linkErrors = [];
+      validAdditionalLinks.forEach((link, index) => {
+        if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(link)) {
+          linkErrors[index] = 'Please enter a valid URL';
+        }
+      });
+      if (linkErrors.length > 0) {
+        newErrors.additional_links = linkErrors;
+      }
+    }
+
     // Portfolio links validation
     const validPortfolioLinks = formData.portfolio_links.filter(link => link.trim() !== '');
-    if (validPortfolioLinks.length === 0) {
-      newErrors.portfolio_links = 'Please add at least one portfolio link';
-    } else {
+    if (validPortfolioLinks.length > 0) {
       const linkErrors = [];
       validPortfolioLinks.forEach((link, index) => {
         if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(link)) {
@@ -213,8 +280,8 @@ const RegistrationModal = ({ show, handleClose }) => {
     if (name === 'phone') {
       // Only allow digits for phone, max 10
       processedValue = value.replace(/[^0-9]/g, '').slice(0, 10);
-    } else if (name === 'first_name' || name === 'last_name') {
-      // Only allow letters and spaces for names
+    } else if (name === 'full_name') {
+      // Only allow letters and spaces for name
       processedValue = value.replace(/[^a-zA-Z\s]/g, '');
     }
     
@@ -228,6 +295,32 @@ const RegistrationModal = ({ show, handleClose }) => {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+  };
+
+  // Handle user type change
+  const handleUserTypeChange = (userType) => {
+    setFormData(prev => ({
+      ...prev,
+      user_type: userType,
+      // Reset form fields that are specific to each user type
+      team_name: userType === 'organization' ? prev.team_name : '',
+      date_of_birth: userType === 'individual' ? prev.date_of_birth : ''
+    }));
+
+    // Clear errors for fields that are specific to each user type
+    if (userType === 'organization') {
+      setErrors(prev => ({
+        ...prev,
+        team_name: '',
+        date_of_birth: ''
+      }));
+    } else {
+      setErrors(prev => ({
+        ...prev,
+        team_name: '',
+        date_of_birth: ''
       }));
     }
   };
@@ -306,6 +399,87 @@ const RegistrationModal = ({ show, handleClose }) => {
     }
   };
 
+  // Handle certificate file change
+  const handleCertificateFileChange = (certificateType, e) => {
+    const file = e.target.files[0];
+    
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      if (!validTypes.includes(file.type)) {
+        setErrors(prev => ({
+          ...prev,
+          [certificateType]: 'Please upload a valid file (JPEG, JPG, PNG, or PDF)'
+        }));
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+      if (file.size > maxSize) {
+        setErrors(prev => ({
+          ...prev,
+          [certificateType]: 'File size should be less than 2MB'
+        }));
+        return;
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [certificateType]: file
+      }));
+      
+      // Clear error if it exists
+      if (errors[certificateType]) {
+        setErrors(prev => ({
+          ...prev,
+          [certificateType]: ''
+        }));
+      }
+    }
+  };
+
+  // Remove certificate file
+  const removeCertificateFile = (certificateType) => {
+    setFormData(prev => ({
+      ...prev,
+      [certificateType]: null
+    }));
+    
+    // Reset file input
+    if (certificateFileRefs[certificateType].current) {
+      certificateFileRefs[certificateType].current.value = '';
+    }
+  };
+
+  // Handle certificate selection
+  const handleCertificateSelection = (certificateId) => {
+    setFormData(prev => {
+      const newSelectedCertificates = prev.selected_certificates.includes(certificateId)
+        ? prev.selected_certificates.filter(id => id !== certificateId)
+        : [...prev.selected_certificates, certificateId];
+      
+      // If certificate is being deselected, remove the file
+      if (!newSelectedCertificates.includes(certificateId)) {
+        return { 
+          ...prev, 
+          selected_certificates: newSelectedCertificates,
+          [certificateId]: null
+        };
+      }
+      
+      return { ...prev, selected_certificates: newSelectedCertificates };
+    });
+
+    // Clear error if it exists
+    if (errors[certificateId]) {
+      setErrors(prev => ({
+        ...prev,
+        [certificateId]: ''
+      }));
+    }
+  };
+
   // Handle talent scope selection
   const handleTalentScopeChange = (talent) => {
     setFormData(prev => {
@@ -322,6 +496,86 @@ const RegistrationModal = ({ show, handleClose }) => {
         ...prev,
         talent_scope: ''
       }));
+    }
+  };
+
+  // Handle social media links
+  const handleSocialMediaLinkChange = (index, value) => {
+    const newSocialMediaLinks = [...formData.social_media_links];
+    newSocialMediaLinks[index] = value;
+    setFormData(prev => ({ ...prev, social_media_links: newSocialMediaLinks }));
+
+    // Clear error for this specific link if it exists
+    if (errors.social_media_links && Array.isArray(errors.social_media_links) && errors.social_media_links[index]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        if (Array.isArray(newErrors.social_media_links)) {
+          newErrors.social_media_links = [...newErrors.social_media_links];
+          newErrors.social_media_links[index] = '';
+        }
+        return newErrors;
+      });
+    } else if (errors.social_media_links && typeof errors.social_media_links === 'string') {
+      // Clear the general social_media_links error if it's a string
+      setErrors(prev => ({
+        ...prev,
+        social_media_links: ''
+      }));
+    }
+  };
+
+  const addSocialMediaLink = () => {
+    setFormData(prev => ({
+      ...prev,
+      social_media_links: [...prev.social_media_links, '']
+    }));
+  };
+
+  const removeSocialMediaLink = (index) => {
+    if (formData.social_media_links.length > 1) {
+      const newSocialMediaLinks = [...formData.social_media_links];
+      newSocialMediaLinks.splice(index, 1);
+      setFormData(prev => ({ ...prev, social_media_links: newSocialMediaLinks }));
+    }
+  };
+
+  // Handle additional links
+  const handleAdditionalLinkChange = (index, value) => {
+    const newAdditionalLinks = [...formData.additional_links];
+    newAdditionalLinks[index] = value;
+    setFormData(prev => ({ ...prev, additional_links: newAdditionalLinks }));
+
+    // Clear error for this specific link if it exists
+    if (errors.additional_links && Array.isArray(errors.additional_links) && errors.additional_links[index]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        if (Array.isArray(newErrors.additional_links)) {
+          newErrors.additional_links = [...newErrors.additional_links];
+          newErrors.additional_links[index] = '';
+        }
+        return newErrors;
+      });
+    } else if (errors.additional_links && typeof errors.additional_links === 'string') {
+      // Clear the general additional_links error if it's a string
+      setErrors(prev => ({
+        ...prev,
+        additional_links: ''
+      }));
+    }
+  };
+
+  const addAdditionalLink = () => {
+    setFormData(prev => ({
+      ...prev,
+      additional_links: [...prev.additional_links, '']
+    }));
+  };
+
+  const removeAdditionalLink = (index) => {
+    if (formData.additional_links.length > 1) {
+      const newAdditionalLinks = [...formData.additional_links];
+      newAdditionalLinks.splice(index, 1);
+      setFormData(prev => ({ ...prev, additional_links: newAdditionalLinks }));
     }
   };
 
@@ -378,16 +632,28 @@ const RegistrationModal = ({ show, handleClose }) => {
         // Create FormData for file upload
         const apiFormData = new FormData();
         
+        // Add user type
+        apiFormData.append('user_type', formData.user_type);
+        
+        // Add team name if organization
+        if (formData.user_type === 'organization') {
+          apiFormData.append('team_name', formData.team_name);
+        }
+        
         // Add all form fields
-        apiFormData.append('first_name', formData.first_name);
-        apiFormData.append('last_name', formData.last_name);
+        apiFormData.append('full_name', formData.full_name);
+        apiFormData.append('gender', formData.gender);
+        
+        if (formData.user_type === 'individual') {
+          apiFormData.append('date_of_birth', formData.date_of_birth);
+        }
+        
         apiFormData.append('email', formData.email);
         apiFormData.append('password', formData.password);
-        apiFormData.append('date_of_birth', formData.date_of_birth);
         apiFormData.append('country', formData.country);
         apiFormData.append('state', formData.state);
         apiFormData.append('city', formData.city);
-        apiFormData.append('phone', JSON.stringify(formData.phone));
+        apiFormData.append('phone', formData.phone);
         apiFormData.append('address', formData.address);
         apiFormData.append('introduction', formData.introduction);
         
@@ -396,12 +662,31 @@ const RegistrationModal = ({ show, handleClose }) => {
           apiFormData.append('profile_image', formData.profile_image);
         }
         
-        // Add talent scope as JSON string - this is the key fix
+        // Add talent scope as JSON string
         apiFormData.append('talent_scope', JSON.stringify(formData.talent_scope));
         
-        // Add portfolio links as JSON string - using the same approach for consistency
+        // Add social media links as JSON string
+        const validSocialMediaLinks = formData.social_media_links.filter(link => link.trim() !== '');
+        apiFormData.append('social_media_link', JSON.stringify(validSocialMediaLinks));
+        
+        // Add additional links as JSON string
+        const validAdditionalLinks = formData.additional_links.filter(link => link.trim() !== '');
+        if (validAdditionalLinks.length > 0) {
+          apiFormData.append('additional_link', JSON.stringify(validAdditionalLinks));
+        }
+        
+        // Add portfolio links as JSON string
         const validPortfolioLinks = formData.portfolio_links.filter(link => link.trim() !== '');
-        apiFormData.append('portfolio_link', JSON.stringify(validPortfolioLinks));
+        if (validPortfolioLinks.length > 0) {
+          apiFormData.append('portfolio_link', JSON.stringify(validPortfolioLinks));
+        }
+        
+        // Add certificate files
+        certificateOptions.forEach(option => {
+          if (formData[option.id]) {
+            apiFormData.append(option.id, formData[option.id]);
+          }
+        });
 
         // Log the form data for debugging
         console.log('Submitting registration data:');
@@ -409,81 +694,121 @@ const RegistrationModal = ({ show, handleClose }) => {
           console.log(`${key}:`, value);
         }
 
-        // Add this right before the API call in handleRegistrationSubmit
-console.log('Phone value being sent:', formData.phone);
-console.log('Phone type:', typeof formData.phone);
-console.log('Phone length:', formData.phone.length);
-
-        // API call
+        // API call with timeout and proper error handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
         const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/reg-user/', {
           method: 'POST',
-          body: apiFormData
-          // Don't set Content-Type header when using FormData, browser sets it automatically with boundary
+          body: apiFormData,
+          headers: {
+            'Accept': 'application/json'
+          },
+          signal: controller.signal,
+          mode: 'cors' // Explicitly set CORS mode
         });
         
+        clearTimeout(timeoutId);
+        
+        // Check if response is OK
+        if (!response.ok) {
+          // Try to get error details from response
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            // If we can't parse JSON, use status text
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+          
+          // Handle different error formats
+          if (errorData.message) {
+            throw new Error(errorData.message);
+          } else if (errorData.error) {
+            throw new Error(errorData.error);
+          } else if (errorData.errors) {
+            // If there are field-specific errors, extract them
+            const errorMessages = Object.values(errorData.errors).flat();
+            throw new Error(errorMessages.join(', '));
+          } else if (errorData.detail) {
+            throw new Error(errorData.detail);
+          } else {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+        }
+        
+        // Parse successful response
         const data = await response.json();
         console.log('API Response:', data); // Log the response for debugging
         setApiResponse(data); // Store response for debugging
         
-        if (response.ok) {
-          // On success, move to verification step
-          setRegisteredEmail(formData.email);
-          setSubmitSuccess(true);
-          setIsSubmitting(false);
+        // On success, move to verification step
+        setRegisteredEmail(formData.email);
+        setSubmitSuccess(true);
+        setIsSubmitting(false);
+        
+        // Reset form after successful submission
+        setTimeout(() => {
+          setFormData({
+            user_type: 'individual',
+            team_name: '',
+            profile_image: null,
+            profile_image_preview: '',
+            full_name: '',
+            gender: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            date_of_birth: '',
+            country: '',
+            state: '',
+            city: '',
+            phone: '',
+            address: '',
+            introduction: '',
+            talent_scope: [],
+            social_media_links: [''],
+            additional_links: [''],
+            portfolio_links: [''],
+            selected_certificates: [],
+            national_level_certificate: null,
+            internation_level_certificate_award: null,
+            state_level_certificate: null,
+            district_level_certificate: null,
+            college_level_certificate: null,
+            other_certificate: null,
+            agreeTerms: false
+          });
           
-          // Reset form after successful submission
-          setTimeout(() => {
-            setFormData({
-              profile_image: null,
-              profile_image_preview: '',
-              first_name: '',
-              last_name: '',
-              email: '',
-              password: '',
-              confirmPassword: '',
-              date_of_birth: '',
-              country: '',
-              state: '',
-              city: '',
-              phone: '',
-              address: '',
-              introduction: '',
-              talent_scope: [],
-              portfolio_links: [''],
-              agreeTerms: false
-            });
-            
-            // Reset file input
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
-            
-            setSubmitSuccess(false);
-            setCurrentStep('verification');
-          }, 2000);
-        } else {
-          // Handle API errors with more detail
-          let errorMessage = 'Registration failed. Please try again later.';
-          
-          if (data.message) {
-            errorMessage = data.message;
-          } else if (data.error) {
-            errorMessage = data.error;
-          } else if (data.errors) {
-            // If there are field-specific errors, extract them
-            const errorMessages = Object.values(data.errors).flat();
-            errorMessage = errorMessages.join(', ');
-          } else if (data.detail) {
-            errorMessage = data.detail;
+          // Reset file inputs
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
           }
           
-          setApiError(errorMessage);
-          setIsSubmitting(false);
-        }
+          Object.values(certificateFileRefs).forEach(ref => {
+            if (ref.current) {
+              ref.current.value = '';
+            }
+          });
+          
+          setSubmitSuccess(false);
+          setCurrentStep('verification');
+        }, 2000);
         
       } catch (error) {
         console.error('Registration error:', error);
-        setApiError(`Network error: ${error.message}. Please check your connection and try again.`);
+        
+        // Handle different types of errors
+        if (error.name === 'AbortError') {
+          setApiError('Request timed out. Please check your connection and try again.');
+        } else if (error.message.includes('Failed to fetch')) {
+          setApiError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+        } else if (error.message.includes('CORS')) {
+          setApiError('Network error: CORS policy issue. Please contact support.');
+        } else {
+          setApiError(`Error: ${error.message}`);
+        }
+        
         setIsSubmitting(false);
       }
     }
@@ -498,50 +823,77 @@ console.log('Phone length:', formData.phone.length);
       setApiError('');
       
       try {
-        // API call for verification
+        // API call with timeout and proper error handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
         const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/verify-email/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             email: registeredEmail,
             code: verificationCode
-          })
+          }),
+          signal: controller.signal,
+          mode: 'cors' // Explicitly set CORS mode
         });
         
+        clearTimeout(timeoutId);
+        
+        // Check if response is OK
+        if (!response.ok) {
+          // Try to get error details from response
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            // If we can't parse JSON, use status text
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+          
+          // Handle different error formats
+          if (errorData.message) {
+            throw new Error(errorData.message);
+          } else if (errorData.error) {
+            throw new Error(errorData.error);
+          } else if (errorData.detail) {
+            throw new Error(errorData.detail);
+          } else {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          }
+        }
+        
+        // Parse successful response
         const data = await response.json();
         console.log('Verification API Response:', data); // Log the response for debugging
         
-        if (response.ok) {
-          // On success
-          setVerificationSuccess(true);
-          setIsSubmitting(false);
-          
-          // Navigate to login page after successful verification
-          setTimeout(() => {
-            handleClose();
-            navigate('/login');
-          }, 2000);
-        } else {
-          // Handle API errors
-          let errorMessage = 'Verification failed. Please try again later.';
-          
-          if (data.message) {
-            errorMessage = data.message;
-          } else if (data.error) {
-            errorMessage = data.error;
-          } else if (data.detail) {
-            errorMessage = data.detail;
-          }
-          
-          setApiError(errorMessage);
-          setIsSubmitting(false);
-        }
+        // On success
+        setVerificationSuccess(true);
+        setIsSubmitting(false);
+        
+        // Navigate to login page after successful verification
+        setTimeout(() => {
+          handleClose();
+          navigate('/login');
+        }, 2000);
         
       } catch (error) {
         console.error('Verification error:', error);
-        setApiError(`Network error: ${error.message}. Please check your connection and try again.`);
+        
+        // Handle different types of errors
+        if (error.name === 'AbortError') {
+          setApiError('Request timed out. Please check your connection and try again.');
+        } else if (error.message.includes('Failed to fetch')) {
+          setApiError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+        } else if (error.message.includes('CORS')) {
+          setApiError('Network error: CORS policy issue. Please contact support.');
+        } else {
+          setApiError(`Error: ${error.message}`);
+        }
+        
         setIsSubmitting(false);
       }
     }
@@ -554,48 +906,75 @@ console.log('Phone length:', formData.phone.length);
     setResendSuccess(false);
     
     try {
-      // API call to resend code
+      // API call with timeout and proper error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/resend-verification/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           email: registeredEmail
-        })
+        }),
+        signal: controller.signal,
+        mode: 'cors' // Explicitly set CORS mode
       });
       
+      clearTimeout(timeoutId);
+      
+      // Check if response is OK
+      if (!response.ok) {
+        // Try to get error details from response
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // If we can't parse JSON, use status text
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        // Handle different error formats
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        } else if (errorData.error) {
+          throw new Error(errorData.error);
+        } else if (errorData.detail) {
+          throw new Error(errorData.detail);
+        } else {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+      }
+      
+      // Parse successful response
       const data = await response.json();
       console.log('Resend Code API Response:', data); // Log the response for debugging
       
-      if (response.ok) {
-        // On success
-        setResendSuccess(true);
-        setIsSubmitting(false);
-        
-        // Hide success message after 3 seconds
-        setTimeout(() => {
-          setResendSuccess(false);
-        }, 3000);
-      } else {
-        // Handle API errors
-        let errorMessage = 'Failed to resend code. Please try again later.';
-        
-        if (data.message) {
-          errorMessage = data.message;
-        } else if (data.error) {
-          errorMessage = data.error;
-        } else if (data.detail) {
-          errorMessage = data.detail;
-        }
-        
-        setApiError(errorMessage);
-        setIsSubmitting(false);
-      }
+      // On success
+      setResendSuccess(true);
+      setIsSubmitting(false);
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setResendSuccess(false);
+      }, 3000);
       
     } catch (error) {
       console.error('Resend code error:', error);
-      setApiError(`Network error: ${error.message}. Please check your connection and try again.`);
+      
+      // Handle different types of errors
+      if (error.name === 'AbortError') {
+        setApiError('Request timed out. Please check your connection and try again.');
+      } else if (error.message.includes('Failed to fetch')) {
+        setApiError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (error.message.includes('CORS')) {
+        setApiError('Network error: CORS policy issue. Please contact support.');
+      } else {
+        setApiError(`Error: ${error.message}`);
+      }
+      
       setIsSubmitting(false);
     }
   };
@@ -618,13 +997,13 @@ console.log('Phone length:', formData.phone.length);
   // Get today's date in YYYY-MM-DD format for max attribute
   const today = new Date().toISOString().split('T')[0];
 
-  // Check if portfolio_links error is a string or array
-  const getPortfolioLinkError = (index) => {
-    if (errors.portfolio_links) {
-      if (Array.isArray(errors.portfolio_links)) {
-        return errors.portfolio_links[index];
+  // Check if links error is a string or array
+  const getLinkError = (errorType, index) => {
+    if (errors[errorType]) {
+      if (Array.isArray(errors[errorType])) {
+        return errors[errorType][index];
       }
-      return errors.portfolio_links;
+      return errors[errorType];
     }
     return '';
   };
@@ -653,6 +1032,48 @@ console.log('Phone length:', formData.phone.length);
                   <strong>Debug Info:</strong>
                   <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
                 </Alert>
+              )}
+              
+              {/* User Type Selection */}
+              <Form.Group className="mb-4">
+                <Form.Label>Registration Type *</Form.Label>
+                <div className="d-flex">
+                  <Form.Check
+                    type="radio"
+                    id="individual-type"
+                    name="user_type"
+                    label="Individual"
+                    checked={formData.user_type === 'individual'}
+                    onChange={() => handleUserTypeChange('individual')}
+                    className="me-4"
+                  />
+                  <Form.Check
+                    type="radio"
+                    id="organization-type"
+                    name="user_type"
+                    label="Organization"
+                    checked={formData.user_type === 'organization'}
+                    onChange={() => handleUserTypeChange('organization')}
+                  />
+                </div>
+              </Form.Group>
+              
+              {/* Team Name (only for organization) */}
+              {formData.user_type === 'organization' && (
+                <Form.Group className="mb-3">
+                  <Form.Label>Team Name *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="team_name"
+                    value={formData.team_name}
+                    onChange={handleChange}
+                    isInvalid={!!errors.team_name}
+                    placeholder="Enter your organization/team name"
+                  />
+                  <Form.Control.Feedback type="invalid" className='val-error'>
+                    {errors.team_name}
+                  </Form.Control.Feedback>
+                </Form.Group>
               )}
               
               {/* Profile Image Upload */}
@@ -697,43 +1118,69 @@ console.log('Phone length:', formData.phone.length);
                   <Form.Text className="text-muted">
                     Upload a profile picture (JPEG, JPG, PNG, or GIF, max 1MB)
                   </Form.Text>
-                  <Form.Control.Feedback type="invalid" className="val-error">
+                  <Form.Control.Feedback type="invalid" className='val-error'>
                     {errors.profile_image}
                   </Form.Control.Feedback>
                 </div>
               </Form.Group>
               
+              {/* Full Name and Gender */}
               <Row>
-                <Col md={6}>
+                <Col md={8}>
                   <Form.Group className="mb-3">
-                    <Form.Label>First Name *</Form.Label>
+                    <Form.Label>Full Name *</Form.Label>
                     <Form.Control
                       type="text"
-                      name="first_name"
-                      value={formData.first_name}
+                      name="full_name"
+                      value={formData.full_name}
                       onChange={handleChange}
-                      isInvalid={!!errors.first_name}
-                      placeholder="Enter your first name"
+                      isInvalid={!!errors.full_name}
+                      placeholder="Enter your full name"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
-                      {errors.first_name}
+                      {errors.full_name}
                     </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
-                <Col md={6}>
+                <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Last Name *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="last_name"
-                      value={formData.last_name}
-                      onChange={handleChange}
-                      isInvalid={!!errors.last_name}
-                      placeholder="Enter your last name"
-                    />
-                    <Form.Control.Feedback type="invalid" className='val-error'>
-                      {errors.last_name}
-                    </Form.Control.Feedback>
+                    <Form.Label>Gender *</Form.Label>
+                    <div className="d-flex">
+                      <Form.Check
+                        type="radio"
+                        id="gender-male"
+                        name="gender"
+                        label="Male"
+                        value="Male"
+                        checked={formData.gender === 'Male'}
+                        onChange={handleChange}
+                        className="me-3"
+                      />
+                      <Form.Check
+                        type="radio"
+                        id="gender-female"
+                        name="gender"
+                        label="Female"
+                        value="Female"
+                        checked={formData.gender === 'Female'}
+                        onChange={handleChange}
+                        className="me-3"
+                      />
+                      <Form.Check
+                        type="radio"
+                        id="gender-other"
+                        name="gender"
+                        label="Other"
+                        value="Other"
+                        checked={formData.gender === 'Other'}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    {errors.gender && (
+                      <div className="val-error mt-1 text-danger">
+                        {errors.gender}
+                      </div>
+                    )}
                   </Form.Group>
                 </Col>
               </Row>
@@ -751,6 +1198,11 @@ console.log('Phone length:', formData.phone.length);
                 <Form.Control.Feedback type="invalid" className='val-error'>
                   {errors.email}
                 </Form.Control.Feedback>
+                {apiError && (
+                  <div className="text-danger mt-1">
+                    {apiError}
+                  </div>
+                )}
               </Form.Group>
 
               <Row>
@@ -821,23 +1273,26 @@ console.log('Phone length:', formData.phone.length);
               </Form.Group>
 
               <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Date of Birth *</Form.Label>
-                    <Form.Control
-                      type="date"
-                      name="date_of_birth"
-                      value={formData.date_of_birth}
-                      onChange={handleChange}
-                      isInvalid={!!errors.date_of_birth}
-                      max={today} // Prevent future dates
-                    />
-                    <Form.Control.Feedback type="invalid" className='val-error'>
-                      {errors.date_of_birth}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
+                {/* Date of Birth (only for individual) */}
+                {formData.user_type === 'individual' && (
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Date of Birth *</Form.Label>
+                      <Form.Control
+                        type="date"
+                        name="date_of_birth"
+                        value={formData.date_of_birth}
+                        onChange={handleChange}
+                        isInvalid={!!errors.date_of_birth}
+                        max={today} // Prevent future dates
+                      />
+                      <Form.Control.Feedback type="invalid" className='val-error'>
+                        {errors.date_of_birth}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                )}
+                <Col md={formData.user_type === 'individual' ? 6 : 12}>
                   <Form.Group className="mb-3">
                     <Form.Label>Phone Number *</Form.Label>
                     <Form.Control
@@ -857,14 +1312,88 @@ console.log('Phone length:', formData.phone.length);
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Portfolio Links *</Form.Label>
+                <Form.Label>Social Media Links *</Form.Label>
+                {formData.social_media_links.map((link, index) => (
+                  <div key={index} className="d-flex mb-2">
+                    <Form.Control
+                      type="url"
+                      value={link}
+                      onChange={(e) => handleSocialMediaLinkChange(index, e.target.value)}
+                      isInvalid={!!getLinkError('social_media_links', index)}
+                      placeholder="https://github.com/username"
+                    />
+                    {formData.social_media_links.length > 1 && (
+                      <Button
+                        variant="outline-danger"
+                        className="ms-2"
+                        onClick={() => removeSocialMediaLink(index)}
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={addSocialMediaLink}
+                  className="mt-2"
+                >
+                  + Add Another Link
+                </Button>
+                {errors.social_media_links && typeof errors.social_media_links === 'string' && (
+                  <div className="val-error mt-1 text-danger">
+                    {errors.social_media_links}
+                  </div>
+                )}
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Additional Links</Form.Label>
+                {formData.additional_links.map((link, index) => (
+                  <div key={index} className="d-flex mb-2">
+                    <Form.Control
+                      type="url"
+                      value={link}
+                      onChange={(e) => handleAdditionalLinkChange(index, e.target.value)}
+                      isInvalid={!!getLinkError('additional_links', index)}
+                      placeholder="https://portfolio.example.com"
+                    />
+                    {formData.additional_links.length > 1 && (
+                      <Button
+                        variant="outline-danger"
+                        className="ms-2"
+                        onClick={() => removeAdditionalLink(index)}
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={addAdditionalLink}
+                  className="mt-2"
+                >
+                  + Add Another Link
+                </Button>
+                {errors.additional_links && typeof errors.additional_links === 'string' && (
+                  <div className="val-error mt-1 text-danger">
+                    {errors.additional_links}
+                  </div>
+                )}
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Portfolio Links</Form.Label>
                 {formData.portfolio_links.map((link, index) => (
                   <div key={index} className="d-flex mb-2">
                     <Form.Control
                       type="url"
                       value={link}
                       onChange={(e) => handlePortfolioLinkChange(index, e.target.value)}
-                      isInvalid={!!getPortfolioLinkError(index)}
+                      isInvalid={!!getLinkError('portfolio_links', index)}
                       placeholder="https://example.com/portfolio"
                     />
                     {formData.portfolio_links.length > 1 && (
@@ -968,7 +1497,10 @@ console.log('Phone length:', formData.phone.length);
                   value={formData.introduction}
                   onChange={handleChange}
                   isInvalid={!!errors.introduction}
-                  placeholder="Tell us about yourself, your experience, and what you hope to achieve..."
+                  placeholder={formData.user_type === 'individual' 
+                    ? "Tell us about yourself, your experience, and what you hope to achieve..."
+                    : "Tell us about your organization, its mission, and what you hope to achieve..."
+                  }
                 />
                 <div className="d-flex justify-content-between">
                   <Form.Control.Feedback type="invalid" className='val-error'>
@@ -979,6 +1511,71 @@ console.log('Phone length:', formData.phone.length);
                   </small>
                 </div>
               </Form.Group>
+
+              {/* Certificate Selection and Upload */}
+              <Form.Group className="mb-3">
+                <Form.Label>Certificates</Form.Label>
+                <Dropdown autoClose="outside">
+                  <Dropdown.Toggle variant="outline-secondary" id="certificate-dropdown">
+                    Select Certificates to Upload
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu>
+                    {certificateOptions.map((option, index) => (
+                      <Dropdown.Item key={index} as="div">
+                        <Form.Check
+                          type="checkbox"
+                          id={`certificate-${index}`}
+                          label={option.label}
+                          checked={formData.selected_certificates.includes(option.id)}
+                          onChange={() => handleCertificateSelection(option.id)}
+                        />
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown>
+                {formData.selected_certificates.length > 0 && (
+                  <div className="mt-2">
+                    <small className="text-muted">Selected: {formData.selected_certificates.map(id => 
+                      certificateOptions.find(option => option.id === id)?.label
+                    ).join(', ')}</small>
+                  </div>
+                )}
+              </Form.Group>
+
+              {/* Certificate File Uploads */}
+              {formData.selected_certificates.map(certificateId => {
+                const option = certificateOptions.find(opt => opt.id === certificateId);
+                return (
+                  <Form.Group key={certificateId} className="mb-3">
+                    <Form.Label>{option.label} *</Form.Label>
+                    <div className="d-flex align-items-center">
+                      <Form.Control
+                        type="file"
+                        ref={certificateFileRefs[certificateId]}
+                        onChange={(e) => handleCertificateFileChange(certificateId, e)}
+                        isInvalid={!!errors[certificateId]}
+                        accept="image/*,application/pdf"
+                        className="me-2"
+                      />
+                      {formData[certificateId] && (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => removeCertificateFile(certificateId)}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <Form.Text className="text-muted">
+                      Upload certificate file (JPEG, JPG, PNG, or PDF, max 2MB)
+                    </Form.Text>
+                    <Form.Control.Feedback type="invalid" className='val-error'>
+                      {errors[certificateId]}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                );
+              })}
 
               <Form.Group className="mb-3">
                 <Form.Check
