@@ -15,8 +15,8 @@ const Login = () => {
   const location = useLocation();
 
   // Get the location the user was trying to go to.
-  // If they just landed on /Login, we'll redirect them to the dashboard after login.
-  const from = location.state?.from?.pathname || "/DashBoard";
+  // If they just landed on /Login,     we'll redirect them to the dashboard after login.
+  const from = location.state?.from?.pathname ||    "/DashBoard";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
