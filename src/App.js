@@ -10,7 +10,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
-// import { AuthProvider } from "./context/AuthContext";
+
 
 
 import Home from "./componets/pages/Home";
@@ -22,6 +22,7 @@ import Faculty from "./componets/pages/about_us/Faculty";
 import RegistrationModal from "./componets/pages/RegistrationModal";
 import DashBoardHeader from "./componets/event_panel/DashBoardHeader";
 import Dashboard from "./componets/event_panel/DashBoard";
+import Login from "./componets/login/Login";
 
 // import NavBar from "./componets/topnav/NavBar";
 // import Footer from "./componets/footer/Footer";
@@ -50,7 +51,7 @@ function App() {
             <Route path="/Admissions" element={<Admissions />} />
             <Route path="/Faculty" element={<Faculty />} />
              <Route path="/RegistrationModal" element={<RegistrationModal />} />
-            
+              <Route path="/Login" element={<Login />} />
           
           </Routes>
         </main>
