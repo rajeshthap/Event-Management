@@ -14,10 +14,6 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the location the user was trying to go to.
-  // If they just landed on /Login,     we'll redirect them to the dashboard after login.
-  const from = location.state?.from?.pathname ||    "/DashBoard";
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(''); // Clear previous errors
@@ -42,14 +38,22 @@ const Login = () => {
 
       if (response.ok) {
         // On successful login, call the login function from AuthContext
-        // This will save the tokens and update the authentication state
+        // This will save the tokens and update the authentication state globally
         login(data);
 
-        // Redirect the user to their intended destination
-        navigate(from, { replace: true });
+        // --- ROLE-BASED REDIRECTION LOGIC ---
+        let redirectTo;
+        if (data.role === 'admin') {
+          redirectTo = "/DashBoard"; // Admin dashboard
+        } else {
+          // Default to user dashboard for 'user' role or any other role
+          redirectTo = "/UserDashBoard";
+        }
+
+        // Redirect the user to their role-specific dashboard
+        navigate(redirectTo, { replace: true });
       } else {
-        // If the server returns an error (e.g., 400 Bad Request, 401 Unauthorized)
-        // Display the error message from the API if available
+        // If the server returns an error, display the error message
         throw new Error(data.message || "Login failed. Please check your credentials.");
       }
     } catch (err) {
