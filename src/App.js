@@ -19,6 +19,7 @@ import NavBar from "./componets/navbar/NavBar";
 import AboutUs from "./componets/pages/AboutUs"; 
 import Admissions from "./componets/pages/about_us/Admissions";
 import Faculty from "./componets/pages/about_us/Faculty";
+import RegistrationModal from "./componets/pages/RegistrationModal";
 
 // import NavBar from "./componets/topnav/NavBar";
 // import Footer from "./componets/footer/Footer";
@@ -43,6 +44,7 @@ function App() {
             <Route path="/AboutUs" element={<AboutUs />} />
             <Route path="/Admissions" element={<Admissions />} />
             <Route path="/Faculty" element={<Faculty />} />
+             <Route path="/RegistrationModal" element={<RegistrationModal />} />
             
           
           </Routes>
