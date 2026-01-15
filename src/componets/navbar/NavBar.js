@@ -2,6 +2,7 @@ import React, { useState } from 'react'; // 1. Import useState
 import "../../assets/css/mainstyle.css"
 import { Link } from 'react-router-dom';
 import EventLogo from '../../assets/images/br-event-logo.png'
+import { Button } from 'react-bootstrap';
 function NavBar() {
   // 2. State to control the main mobile navigation menu
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -67,7 +68,12 @@ function NavBar() {
                 </svg>
               </a>
             </li>
-          </ul> </div>
+             
+          </ul>
+          <ul>
+            <li><Button variant="primary" href="/DashBoard">Login</Button></li>
+          </ul>
+           </div>
         </container>
 
       </div>
