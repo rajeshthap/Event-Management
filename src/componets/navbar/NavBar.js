@@ -1,7 +1,7 @@
 import React, { useState } from 'react'; // 1. Import useState
 import "../../assets/css/mainstyle.css"
 import { Link } from 'react-router-dom';
-
+import EventLogo from '../../assets/images/br-event-logo.png'
 function NavBar() {
   // 2. State to control the main mobile navigation menu
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -76,8 +76,9 @@ function NavBar() {
           <div className="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-end">
 
             <Link to="/" className="logo d-flex align-items-center me-auto">
-              {/* <img src="assets/img/logo.webp" alt="" /> */}
-              <h1 className="sitename">Info Entertainment</h1>
+              <img src={EventLogo} alt="logo" className="logo-wecd" />
+
+              <h1 className="sitename">Br Events</h1>
             </Link>
 
             <nav id="navmenu" className={`navmenu ${isMenuOpen ? 'navmenu-active' : ''}`}>
