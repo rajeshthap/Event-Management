@@ -1,3 +1,94 @@
-.val-error{
-    font-size: 10px;
+
+
+
+/* Validation error styles */
+.val-error {
+  font-size: 10px;
+  margin-top: 0.25rem;
+}
+
+/* Profile Image Upload Styles */
+.profile-image-upload {
+  text-align: center;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem !important;
+}
+
+.profile-image-container {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto;
+}
+
+.profile-image-preview {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border: 3px solid #0d6efd;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-image-placeholder {
+  width: 150px;
+  height: 150px;
+  background-color: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  color: #6c757d;
+}
+
+.profile-image-input {
+  width: 100%;
+  max-width: 300px;
+  margin-top: 0.5rem;
+}
+
+
+
+/* Additional form styling */
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+/* Modal header styling */
+.modal-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-title {
+  font-weight: 600;
+}
+
+/* Dropdown styling */
+.dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .profile-image-container,
+  .profile-image-preview,
+  .profile-image-placeholder {
+    width: 120px;
+    height: 120px;
+  }
 }
