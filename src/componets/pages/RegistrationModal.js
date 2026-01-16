@@ -1,7 +1,6 @@
 // src/components/RegistrationModal.js
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Button, Alert, Dropdown, Row, Col, Image } from 'react-bootstrap';
+import { Modal, Form, Button, Alert, Dropdown, Row, Col, Image, ProgressBar } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import '../../assets/css/registration.css';
 
@@ -56,6 +55,7 @@ const RegistrationModal = ({ show, handleClose }) => {
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [apiResponse, setApiResponse] = useState(null); // To store detailed API response for debugging
+  const [countdown, setCountdown] = useState(0); // For resend code countdown
   
   // Ref for file inputs
   const fileInputRef = useRef(null);
@@ -84,8 +84,7 @@ const RegistrationModal = ({ show, handleClose }) => {
     'Acting',
     'Singing',
     'Music',
-    'Creative Writing',
-    'Painting',
+    'scripting Writing',
     'Photography',
     'Python',
     'Django',
@@ -827,16 +826,19 @@ const RegistrationModal = ({ show, handleClose }) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
+        // Payload for email verification - using FormData for file upload compatibility
+        const formData = new FormData();
+        formData.append('email', registeredEmail);
+        formData.append('verification_code', verificationCode);
+        
+        console.log('Verification payload:', {
+          email: registeredEmail,
+          verification_code: verificationCode
+        });
+        
         const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/verify-email/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            email: registeredEmail,
-            code: verificationCode
-          }),
+          body: formData,
           signal: controller.signal,
           mode: 'cors' // Explicitly set CORS mode
         });
@@ -901,6 +903,8 @@ const RegistrationModal = ({ show, handleClose }) => {
 
   // Handle resend verification code
   const handleResendCode = async () => {
+    if (countdown > 0) return; // Prevent multiple requests during countdown
+    
     setIsSubmitting(true);
     setApiError('');
     setResendSuccess(false);
@@ -910,7 +914,7 @@ const RegistrationModal = ({ show, handleClose }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/resend-verification/', {
+      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/verify-email/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -956,6 +960,18 @@ const RegistrationModal = ({ show, handleClose }) => {
       setResendSuccess(true);
       setIsSubmitting(false);
       
+      // Start countdown for 60 seconds
+      setCountdown(60);
+      const countdownInterval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
       // Hide success message after 3 seconds
       setTimeout(() => {
         setResendSuccess(false);
@@ -991,6 +1007,7 @@ const RegistrationModal = ({ show, handleClose }) => {
       setRegisteredEmail('');
       setResendSuccess(false);
       setApiResponse(null);
+      setCountdown(0);
     }
   }, [show]);
 
@@ -1009,19 +1026,24 @@ const RegistrationModal = ({ show, handleClose }) => {
   };
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>
+    <Modal show={show} onHide={handleClose} size="lg" centered className="registration-modal">
+      <Modal.Header closeButton className="registration-modal-header">
+        <Modal.Title className="registration-modal-title">
           {currentStep === 'registration' ? 'User Registration' : 'Email Verification'}
         </Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="registration-modal-body">
         {currentStep === 'registration' ? (
           // Registration Form
           submitSuccess ? (
-            <Alert variant="success">
-              Registration successful! Please check your email for verification code.
-            </Alert>
+            <div className="text-center py-4">
+              <div className="success-icon mb-3">
+                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+              </div>
+              <h4 className="text-success">Registration Successful!</h4>
+              <p className="text-muted">Please check your email for verification code.</p>
+              <ProgressBar animated now={100} className="mt-3" />
+            </div>
           ) : (
             <Form onSubmit={handleRegistrationSubmit}>
               {apiError && <Alert variant="danger">{apiError}</Alert>}
@@ -1036,7 +1058,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               
               {/* User Type Selection */}
               <Form.Group className="mb-4">
-                <Form.Label>Registration Type *</Form.Label>
+                <Form.Label className="form-label-custom">Registration Type *</Form.Label>
                 <div className="d-flex">
                   <Form.Check
                     type="radio"
@@ -1045,7 +1067,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                     label="Individual"
                     checked={formData.user_type === 'individual'}
                     onChange={() => handleUserTypeChange('individual')}
-                    className="me-4"
+                    className="me-4 user-type-option"
                   />
                   <Form.Check
                     type="radio"
@@ -1054,14 +1076,69 @@ const RegistrationModal = ({ show, handleClose }) => {
                     label="Organization"
                     checked={formData.user_type === 'organization'}
                     onChange={() => handleUserTypeChange('organization')}
+                    className="user-type-option"
                   />
+                     <Form.Group className="mb-4 profile-image-upload">
+                <div className="d-flex flex-column align-items-center">
+                  {formData.profile_image_preview ? (
+                    <div className="position-relative">
+                      <Image
+                        src={formData.profile_image_preview}
+                        alt="Profile Preview"
+                        roundedCircle
+                        style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+                      />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="position-absolute top-0 end-0"
+                        onClick={removeProfileImage}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="upload-icon-container d-flex align-items-center justify-content-center"
+                      onClick={() => fileInputRef.current.click()}
+                      style={{
+                        cursor: 'pointer',
+                        width: '150px',
+                        height: '150px',
+                        border: '2px dashed #ccc',
+                        borderRadius: '50%',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.borderColor = '#0d6efd'}
+                      onMouseOut={(e) => e.currentTarget.style.borderColor = '#ccc'}
+                    >
+                      <i className="bi bi-cloud-arrow-up" style={{ fontSize: '3rem', color: '#0d6efd' }}></i>
+                    </div>
+                  )}
+                  <Form.Control
+                    type="file"
+                    ref={fileInputRef}
+                    name="profile_image"
+                    onChange={handleProfileImageChange}
+                    isInvalid={!!errors.profile_image}
+                    accept="image/*"
+                    className="profile-image-input d-none"
+                  />
+                  <Form.Text className="text-muted">
+                    {formData.profile_image_preview ? 'Click the image to change' : 'Click the icon to upload a profile picture (JPEG, JPG, PNG, or GIF, max 1MB)'}
+                  </Form.Text>
+                  <Form.Control.Feedback type="invalid" className="val-error">
+                    {errors.profile_image}
+                  </Form.Control.Feedback>
+                </div>
+              </Form.Group>
                 </div>
               </Form.Group>
               
               {/* Team Name (only for organization) */}
               {formData.user_type === 'organization' && (
                 <Form.Group className="mb-3">
-                  <Form.Label>Team Name *</Form.Label>
+                  <Form.Label className="form-label-custom">Team Name *</Form.Label>
                   <Form.Control
                     type="text"
                     name="team_name"
@@ -1069,6 +1146,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                     onChange={handleChange}
                     isInvalid={!!errors.team_name}
                     placeholder="Enter your organization/team name"
+                    className="form-control-custom"
                   />
                   <Form.Control.Feedback type="invalid" className='val-error'>
                     {errors.team_name}
@@ -1077,58 +1155,13 @@ const RegistrationModal = ({ show, handleClose }) => {
               )}
               
               {/* Profile Image Upload */}
-              <Form.Group className="mb-4 profile-image-upload">
-                <div className="d-flex flex-column align-items-center">
-                  <div className="profile-image-container mb-3">
-                    {formData.profile_image_preview ? (
-                      <div className="position-relative">
-                        <Image 
-                          src={formData.profile_image_preview} 
-                          alt="Profile Preview" 
-                          className="profile-image-preview rounded-circle"
-                          width={150}
-                          height={150}
-                        />
-                        <Button 
-                          variant="danger" 
-                          size="sm" 
-                          className="position-absolute top-0 end-0 m-1"
-                          onClick={removeProfileImage}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="profile-image-placeholder rounded-circle d-flex align-items-center justify-content-center">
-                        <i className="bi bi-person-circle" style={{ fontSize: '5rem' }}></i>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Form.Label className="form-label">Profile Image *</Form.Label>
-                  <Form.Control
-                    type="file"
-                    ref={fileInputRef}
-                    name="profile_image"
-                    onChange={handleProfileImageChange}
-                    isInvalid={!!errors.profile_image}
-                    accept="image/*"
-                    className="profile-image-input"
-                  />
-                  <Form.Text className="text-muted">
-                    Upload a profile picture (JPEG, JPG, PNG, or GIF, max 1MB)
-                  </Form.Text>
-                  <Form.Control.Feedback type="invalid" className='val-error'>
-                    {errors.profile_image}
-                  </Form.Control.Feedback>
-                </div>
-              </Form.Group>
+           
               
               {/* Full Name and Gender */}
               <Row>
                 <Col md={8}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Full Name *</Form.Label>
+                    <Form.Label className="form-label-custom">Full Name *</Form.Label>
                     <Form.Control
                       type="text"
                       name="full_name"
@@ -1136,6 +1169,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={handleChange}
                       isInvalid={!!errors.full_name}
                       placeholder="Enter your full name"
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.full_name}
@@ -1144,7 +1178,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Gender *</Form.Label>
+                    <Form.Label className="form-label-custom">Gender *</Form.Label>
                     <div className="d-flex">
                       <Form.Check
                         type="radio"
@@ -1154,7 +1188,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                         value="Male"
                         checked={formData.gender === 'Male'}
                         onChange={handleChange}
-                        className="me-3"
+                        className="me-3 gender-option"
                       />
                       <Form.Check
                         type="radio"
@@ -1164,7 +1198,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                         value="Female"
                         checked={formData.gender === 'Female'}
                         onChange={handleChange}
-                        className="me-3"
+                        className="me-3 gender-option"
                       />
                       <Form.Check
                         type="radio"
@@ -1174,6 +1208,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                         value="Other"
                         checked={formData.gender === 'Other'}
                         onChange={handleChange}
+                        className="gender-option"
                       />
                     </div>
                     {errors.gender && (
@@ -1186,7 +1221,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Email Address *</Form.Label>
+                <Form.Label className="form-label-custom">Email Address *</Form.Label>
                 <Form.Control
                   type="email"
                   name="email"
@@ -1194,21 +1229,17 @@ const RegistrationModal = ({ show, handleClose }) => {
                   onChange={handleChange}
                   isInvalid={!!errors.email}
                   placeholder="Enter your email"
+                  className="form-control-custom"
                 />
                 <Form.Control.Feedback type="invalid" className='val-error'>
                   {errors.email}
                 </Form.Control.Feedback>
-                {apiError && (
-                  <div className="text-danger mt-1">
-                    {apiError}
-                  </div>
-                )}
               </Form.Group>
 
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Password *</Form.Label>
+                    <Form.Label className="form-label-custom">Password *</Form.Label>
                     <Form.Control
                       type="password"
                       name="password"
@@ -1216,6 +1247,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={handleChange}
                       isInvalid={!!errors.password}
                       placeholder="Enter your password"
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.password}
@@ -1224,7 +1256,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Confirm Password *</Form.Label>
+                    <Form.Label className="form-label-custom">Confirm Password *</Form.Label>
                     <Form.Control
                       type="password"
                       name="confirmPassword"
@@ -1232,6 +1264,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={handleChange}
                       isInvalid={!!errors.confirmPassword}
                       placeholder="Confirm your password"
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.confirmPassword}
@@ -1241,9 +1274,9 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Talent Scope *</Form.Label>
+                <Form.Label className="form-label-custom">Talent Scope *</Form.Label>
                 <Dropdown autoClose="outside">
-                  <Dropdown.Toggle variant="outline-secondary" id="talent-scope-dropdown">
+                  <Dropdown.Toggle variant="" id="talent-scope-dropdown" className="dropdown-custom">
                     Select Your Talents
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
@@ -1277,7 +1310,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 {formData.user_type === 'individual' && (
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Date of Birth *</Form.Label>
+                      <Form.Label className="form-label-custom">Date of Birth *</Form.Label>
                       <Form.Control
                         type="date"
                         name="date_of_birth"
@@ -1285,6 +1318,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                         onChange={handleChange}
                         isInvalid={!!errors.date_of_birth}
                         max={today} // Prevent future dates
+                        className="form-control-custom"
                       />
                       <Form.Control.Feedback type="invalid" className='val-error'>
                         {errors.date_of_birth}
@@ -1294,7 +1328,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 )}
                 <Col md={formData.user_type === 'individual' ? 6 : 12}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Phone Number *</Form.Label>
+                    <Form.Label className="form-label-custom">Phone Number *</Form.Label>
                     <Form.Control
                       type="text"
                       name="phone"
@@ -1303,6 +1337,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       isInvalid={!!errors.phone}
                       placeholder="Enter 10-digit phone number"
                       maxLength={10}
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.phone}
@@ -1312,7 +1347,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Social Media Links *</Form.Label>
+                <Form.Label className="form-label-custom">Social Media Links *</Form.Label>
                 {formData.social_media_links.map((link, index) => (
                   <div key={index} className="d-flex mb-2">
                     <Form.Control
@@ -1321,6 +1356,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={(e) => handleSocialMediaLinkChange(index, e.target.value)}
                       isInvalid={!!getLinkError('social_media_links', index)}
                       placeholder="https://github.com/username"
+                      className="form-control-custom"
                     />
                     {formData.social_media_links.length > 1 && (
                       <Button
@@ -1348,45 +1384,10 @@ const RegistrationModal = ({ show, handleClose }) => {
                 )}
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Additional Links</Form.Label>
-                {formData.additional_links.map((link, index) => (
-                  <div key={index} className="d-flex mb-2">
-                    <Form.Control
-                      type="url"
-                      value={link}
-                      onChange={(e) => handleAdditionalLinkChange(index, e.target.value)}
-                      isInvalid={!!getLinkError('additional_links', index)}
-                      placeholder="https://portfolio.example.com"
-                    />
-                    {formData.additional_links.length > 1 && (
-                      <Button
-                        variant="outline-danger"
-                        className="ms-2"
-                        onClick={() => removeAdditionalLink(index)}
-                      >
-                        ×
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={addAdditionalLink}
-                  className="mt-2"
-                >
-                  + Add Another Link
-                </Button>
-                {errors.additional_links && typeof errors.additional_links === 'string' && (
-                  <div className="val-error mt-1 text-danger">
-                    {errors.additional_links}
-                  </div>
-                )}
-              </Form.Group>
+           
 
               <Form.Group className="mb-3">
-                <Form.Label>Portfolio Links</Form.Label>
+                <Form.Label className="form-label-custom">Portfolio Links</Form.Label>
                 {formData.portfolio_links.map((link, index) => (
                   <div key={index} className="d-flex mb-2">
                     <Form.Control
@@ -1395,6 +1396,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={(e) => handlePortfolioLinkChange(index, e.target.value)}
                       isInvalid={!!getLinkError('portfolio_links', index)}
                       placeholder="https://example.com/portfolio"
+                      className="form-control-custom"
                     />
                     {formData.portfolio_links.length > 1 && (
                       <Button
@@ -1425,7 +1427,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               <Row>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Country *</Form.Label>
+                    <Form.Label className="form-label-custom">Country *</Form.Label>
                     <Form.Control
                       type="text"
                       name="country"
@@ -1433,6 +1435,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={handleChange}
                       isInvalid={!!errors.country}
                       placeholder="Country"
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.country}
@@ -1441,7 +1444,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>State *</Form.Label>
+                    <Form.Label className="form-label-custom">State *</Form.Label>
                     <Form.Control
                       type="text"
                       name="state"
@@ -1449,6 +1452,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={handleChange}
                       isInvalid={!!errors.state}
                       placeholder="State"
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.state}
@@ -1457,7 +1461,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>City *</Form.Label>
+                    <Form.Label className="form-label-custom">City *</Form.Label>
                     <Form.Control
                       type="text"
                       name="city"
@@ -1465,6 +1469,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       onChange={handleChange}
                       isInvalid={!!errors.city}
                       placeholder="City"
+                      className="form-control-custom"
                     />
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.city}
@@ -1474,7 +1479,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Address *</Form.Label>
+                <Form.Label className="form-label-custom">Address *</Form.Label>
                 <Form.Control
                   type="text"
                   name="address"
@@ -1482,6 +1487,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                   onChange={handleChange}
                   isInvalid={!!errors.address}
                   placeholder="Enter your full address"
+                  className="form-control-custom"
                 />
                 <Form.Control.Feedback type="invalid" className='val-error'>
                   {errors.address}
@@ -1489,7 +1495,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Introduction *</Form.Label>
+                <Form.Label className="form-label-custom">Introduction *</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={4}
@@ -1501,6 +1507,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                     ? "Tell us about yourself, your experience, and what you hope to achieve..."
                     : "Tell us about your organization, its mission, and what you hope to achieve..."
                   }
+                  className="form-control-custom"
                 />
                 <div className="d-flex justify-content-between">
                   <Form.Control.Feedback type="invalid" className='val-error'>
@@ -1514,9 +1521,9 @@ const RegistrationModal = ({ show, handleClose }) => {
 
               {/* Certificate Selection and Upload */}
               <Form.Group className="mb-3">
-                <Form.Label>Certificates</Form.Label>
+                <Form.Label className="form-label-custom">Certificates</Form.Label>
                 <Dropdown autoClose="outside">
-                  <Dropdown.Toggle variant="outline-secondary" id="certificate-dropdown">
+                  <Dropdown.Toggle variant="" id="certificate-dropdown" className="dropdown-custom">
                     Select Certificates to Upload
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
@@ -1547,7 +1554,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 const option = certificateOptions.find(opt => opt.id === certificateId);
                 return (
                   <Form.Group key={certificateId} className="mb-3">
-                    <Form.Label>{option.label} *</Form.Label>
+                    <Form.Label className="form-label-custom">{option.label} *</Form.Label>
                     <div className="d-flex align-items-center">
                       <Form.Control
                         type="file"
@@ -1555,7 +1562,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                         onChange={(e) => handleCertificateFileChange(certificateId, e)}
                         isInvalid={!!errors[certificateId]}
                         accept="image/*,application/pdf"
-                        className="me-2"
+                        className="me-2 form-control-custom"
                       />
                       {formData[certificateId] && (
                         <Button
@@ -1597,6 +1604,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                       </a>
                     </span>
                   }
+                  className="terms-checkbox"
                 />
                 <Form.Control.Feedback type="invalid" className='val-error'>
                   {errors.agreeTerms}
@@ -1607,24 +1615,31 @@ const RegistrationModal = ({ show, handleClose }) => {
         ) : (
           // Email Verification Form
           verificationSuccess ? (
-            <Alert variant="success">
-              Email verified successfully! Redirecting to login page...
-            </Alert>
+            <div className="text-center py-4">
+              <div className="success-icon mb-3">
+                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+              </div>
+              <h4 className="text-success">Email Verified Successfully!</h4>
+              <p className="text-muted">Redirecting to login page...</p>
+              <ProgressBar animated now={100} className="mt-3" />
+            </div>
           ) : (
             <Form onSubmit={handleVerificationSubmit}>
               {apiError && <Alert variant="danger">{apiError}</Alert>}
               {resendSuccess && <Alert variant="success">Verification code sent successfully!</Alert>}
               
               <div className="text-center mb-4">
-                <i className="bi bi-envelope-check" style={{ fontSize: '4rem', color: '#0d6efd' }}></i>
-                <h4 className="mt-3">Verify Your Email</h4>
+                <div className="verification-icon mb-3">
+                  <i className="bi bi-envelope-check" style={{ fontSize: '4rem', color: '#0d6efd' }}></i>
+                </div>
+                <h4 className="mb-3">Verify Your Email</h4>
                 <p className="text-muted">
                   We've sent a verification code to <strong>{registeredEmail}</strong>
                 </p>
               </div>
               
-              <Form.Group className="mb-3">
-                <Form.Label>Verification Code *</Form.Label>
+              <Form.Group className="mb-4">
+                <Form.Label className="form-label-custom">Verification Code *</Form.Label>
                 <Form.Control
                   type="text"
                   value={verificationCode}
@@ -1632,7 +1647,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                   isInvalid={!!errors.verificationCode}
                   placeholder="Enter 6-digit code"
                   maxLength={6}
-                  className="text-center"
+                  className="text-center form-control-custom verification-code-input"
                   style={{ fontSize: '1.5rem', letterSpacing: '0.5rem' }}
                 />
                 <Form.Control.Feedback type="invalid" className='val-error'>
@@ -1645,11 +1660,11 @@ const RegistrationModal = ({ show, handleClose }) => {
                   Didn't receive the code?{' '}
                   <Button 
                     variant="link" 
-                    className="p-0" 
+                    className="p-0 resend-code-btn" 
                     onClick={handleResendCode}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || countdown > 0}
                   >
-                    Resend Code
+                    {countdown > 0 ? `Resend Code (${countdown}s)` : 'Resend Code'}
                   </Button>
                 </p>
               </div>
@@ -1657,29 +1672,31 @@ const RegistrationModal = ({ show, handleClose }) => {
           )
         )}
       </Modal.Body>
-      <Modal.Footer>
+      <Modal.Footer className="registration-modal-footer">
         {currentStep === 'registration' ? (
           <>
-            <Button variant="secondary" onClick={handleClose}>
+            <Button variant="secondary" onClick={handleClose} className="btn-custom-secondary">
               Cancel
             </Button>
             <Button 
               variant="primary" 
               onClick={handleRegistrationSubmit} 
               disabled={isSubmitting || submitSuccess}
+              className="btn-custom-primary"
             >
               {isSubmitting ? 'Registering...' : 'Register'}
             </Button>
           </>
         ) : (
           <>
-            <Button variant="secondary" onClick={handleClose}>
+            <Button variant="secondary" onClick={handleClose} className="btn-custom-secondary">
               Cancel
             </Button>
             <Button 
               variant="primary" 
               onClick={handleVerificationSubmit} 
               disabled={isSubmitting || verificationSuccess}
+              className="btn-custom-primary"
             >
               {isSubmitting ? 'Verifying...' : 'Verify'}
             </Button>
