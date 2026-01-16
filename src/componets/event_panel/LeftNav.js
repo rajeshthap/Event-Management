@@ -64,6 +64,13 @@ const menuItems = [
       active: true,
     },
 
+      {
+      icon: <FaTachometerAlt />,
+      label: "Total Registration",
+      path: "/TotalRegistration",
+      active: true,
+    },
+
     
    
 

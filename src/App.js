@@ -26,6 +26,7 @@ import Login from "./componets/login/Login";
 import UserDashBoard from "./componets/user_dashboard/UserDashBoard";
 import AddHeader from "./componets/event_panel/header/AddHeader";
 import ManageHeader from "./componets/event_panel/header/ManageHeader";
+import TotalRegistration from "./componets/event_panel/totalregistration/TotalRegistration";
 
 // import NavBar from "./componets/topnav/NavBar";
 // import Footer from "./componets/footer/Footer";
@@ -35,7 +36,12 @@ function App() {
 
   const location = useLocation();
 
-  const hiddenPaths = new Set(["/DashBoard","/AddHeader", "/ManageHeader"]);
+  const hiddenPaths = new Set([
+    "/DashBoard",
+    "/AddHeader", 
+    "/ManageHeader",
+    "/TotalRegistration",
+  ]);
 
   const shouldHideNavbar = hiddenPaths.has(location.pathname);
   
@@ -58,6 +64,7 @@ function App() {
               <Route path="/UserDashBoard" element={<UserDashBoard />} />
               <Route path="/AddHeader" element={<AddHeader />} />
               <Route path="/ManageHeader" element={<ManageHeader />} />
+               <Route path="/TotalRegistration" element={<TotalRegistration />} />
           
           </Routes>
         </main>
