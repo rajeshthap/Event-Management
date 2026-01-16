@@ -56,6 +56,7 @@ const RegistrationModal = ({ show, handleClose }) => {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [apiResponse, setApiResponse] = useState(null); // To store detailed API response for debugging
   const [countdown, setCountdown] = useState(0); // For resend code countdown
+  const [alreadyRegisteredMessage, setAlreadyRegisteredMessage] = useState(''); // New state for already registered message
   
   // Ref for file inputs
   const fileInputRef = useRef(null);
@@ -626,6 +627,7 @@ const RegistrationModal = ({ show, handleClose }) => {
       setIsSubmitting(true);
       setApiError('');
       setApiResponse(null);
+      setAlreadyRegisteredMessage(''); // Clear any previous already registered message
       
       try {
         // Create FormData for file upload
@@ -709,37 +711,66 @@ const RegistrationModal = ({ show, handleClose }) => {
         
         clearTimeout(timeoutId);
         
-        // Check if response is OK
-        if (!response.ok) {
-          // Try to get error details from response
-          let errorData;
-          try {
-            errorData = await response.json();
-          } catch (e) {
-            // If we can't parse JSON, use status text
+        // Try to parse the response
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          // If we can't parse JSON, use status text
+          if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
           }
-          
+          // If response is OK but we can't parse JSON, treat it as success
+          data = { success: true };
+        }
+        
+        console.log('API Response:', data); // Log the response for debugging
+        setApiResponse(data); // Store response for debugging
+        
+        // Check if response is OK
+        if (!response.ok) {
           // Handle different error formats
-          if (errorData.message) {
-            throw new Error(errorData.message);
-          } else if (errorData.error) {
-            throw new Error(errorData.error);
-          } else if (errorData.errors) {
+          if (data.message) {
+            // Check if this is the "Email not verified" case
+            if (data.message === 'Email not verified. Verification code resent.') {
+              // Set the already registered message
+              setAlreadyRegisteredMessage(data.message);
+              // Set the registered email for verification
+              setRegisteredEmail(formData.email);
+              // Move to verification step
+              setCurrentStep('verification');
+              setIsSubmitting(false);
+              return;
+            }
+            // Check if this is the "Email already registered and verified" case
+            else if (data.message === 'Email already registered and verified.') {
+              // Set the already registered message
+              setAlreadyRegisteredMessage(data.message);
+              setIsSubmitting(false);
+              return;
+            }
+            throw new Error(data.message);
+          } else if (data.error) {
+            throw new Error(data.error);
+          } else if (data.errors) {
             // If there are field-specific errors, extract them
-            const errorMessages = Object.values(errorData.errors).flat();
+            const errorMessages = Object.values(data.errors).flat();
             throw new Error(errorMessages.join(', '));
-          } else if (errorData.detail) {
-            throw new Error(errorData.detail);
+          } else if (data.detail) {
+            throw new Error(data.detail);
+          } else if (data.email) {
+            // Check if this is the "Email already registered and verified" case
+            if (data.email === 'Email already registered and verified.') {
+              // Set the already registered message
+              setAlreadyRegisteredMessage(data.email);
+              setIsSubmitting(false);
+              return;
+            }
+            throw new Error(data.email);
           } else {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
           }
         }
-        
-        // Parse successful response
-        const data = await response.json();
-        console.log('API Response:', data); // Log the response for debugging
-        setApiResponse(data); // Store response for debugging
         
         // On success, move to verification step
         setRegisteredEmail(formData.email);
@@ -826,24 +857,27 @@ const RegistrationModal = ({ show, handleClose }) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
-        // Payload for email verification - using FormData for file upload compatibility
-        const formData = new FormData();
-        formData.append('email', registeredEmail);
-        formData.append('verification_code', verificationCode);
-        
-        console.log('Verification payload:', {
-          email: registeredEmail,
-          verification_code: verificationCode
-        });
-        
+        // Changed to JSON format instead of FormData
         const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/verify-email/', {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            email: registeredEmail,
+            code: verificationCode
+          }),
           signal: controller.signal,
           mode: 'cors' // Explicitly set CORS mode
         });
         
         clearTimeout(timeoutId);
+        
+        console.log('Verification payload:', {
+          email: registeredEmail,
+          code: verificationCode
+        });
         
         // Check if response is OK
         if (!response.ok) {
@@ -851,6 +885,7 @@ const RegistrationModal = ({ show, handleClose }) => {
           let errorData;
           try {
             errorData = await response.json();
+            console.log('Error response:', errorData);
           } catch (e) {
             // If we can't parse JSON, use status text
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -914,7 +949,8 @@ const RegistrationModal = ({ show, handleClose }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/verify-email/', {
+      // Changed to use the resend verification code endpoint
+      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/resend-verification-code/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -935,6 +971,7 @@ const RegistrationModal = ({ show, handleClose }) => {
         let errorData;
         try {
           errorData = await response.json();
+          console.log('Error response:', errorData);
         } catch (e) {
           // If we can't parse JSON, use status text
           throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -1008,6 +1045,7 @@ const RegistrationModal = ({ show, handleClose }) => {
       setResendSuccess(false);
       setApiResponse(null);
       setCountdown(0);
+      setAlreadyRegisteredMessage(''); // Clear already registered message
     }
   }, [show]);
 
@@ -1047,6 +1085,24 @@ const RegistrationModal = ({ show, handleClose }) => {
           ) : (
             <Form onSubmit={handleRegistrationSubmit}>
               {apiError && <Alert variant="danger">{apiError}</Alert>}
+              
+              {/* Already registered message */}
+              {alreadyRegisteredMessage && (
+                <Alert variant={alreadyRegisteredMessage.includes('not verified') ? 'warning' : 'info'}>
+                  {alreadyRegisteredMessage}
+                  {alreadyRegisteredMessage.includes('not verified') && (
+                    <div className="mt-2">
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        onClick={() => setCurrentStep('verification')}
+                      >
+                        Verify Email Now
+                      </Button>
+                    </div>
+                  )}
+                </Alert>
+              )}
               
               {/* Debug information - remove in production */}
               {process.env.NODE_ENV === 'development' && apiResponse && (
@@ -1627,6 +1683,13 @@ const RegistrationModal = ({ show, handleClose }) => {
             <Form onSubmit={handleVerificationSubmit}>
               {apiError && <Alert variant="danger">{apiError}</Alert>}
               {resendSuccess && <Alert variant="success">Verification code sent successfully!</Alert>}
+              
+              {/* Display already registered message if it exists */}
+              {alreadyRegisteredMessage && (
+                <Alert variant={alreadyRegisteredMessage.includes('not verified') ? 'warning' : 'info'}>
+                  {alreadyRegisteredMessage}
+                </Alert>
+              )}
               
               <div className="text-center mb-4">
                 <div className="verification-icon mb-3">
