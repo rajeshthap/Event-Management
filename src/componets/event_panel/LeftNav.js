@@ -54,7 +54,13 @@ const menuItems = [
     {
       icon: <FaTachometerAlt />,
       label: "Dashboard",
-      path: "/TotalConsultNow",
+      path: "/DashBoard",
+      active: true,
+    },
+    {
+      icon: <FaTachometerAlt />,
+      label: "Header",
+      path: "/Header",
       active: true,
     },
 
@@ -64,16 +70,16 @@ const menuItems = [
   
    {
   icon: <FaInfoCircle />,   // About Us main
-  label: "About Us",
+  label: "Header",
   submenu: [
     {
-      label: "Add Profile",
-      path: "/#",
+      label: "Add Header",
+      path: "/AddHeader",
       icon: <FaUserCircle />, // profile
     },
      {
-          label: "Manage Profile",
-          path: "/#",
+          label: "Manage header",
+          path: "/ManageHeader",
           icon: <FaImage />,
         },
     {
