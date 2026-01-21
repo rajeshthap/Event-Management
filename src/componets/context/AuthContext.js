@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with true to show loading state
 
   // LOGIN
   const login = (data) => {
@@ -65,15 +65,38 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('auth');
       }
     }
+    setIsLoading(false); // Set loading to false after checking localStorage
   }, []);
 
   // REFRESH ACCESS TOKEN (uses in-memory refresh token)
   const refreshAccessToken = async () => {
     try {
+      // First check if we have a refresh token in memory
       if (!auth.refresh) {
-        logout();
-        return null;
+        // If not, check localStorage as a fallback
+        const storedAuth = localStorage.getItem('auth');
+        if (storedAuth) {
+          try {
+            const parsedAuth = JSON.parse(storedAuth);
+            if (parsedAuth.refresh) {
+              setAuth(parsedAuth);
+              setIsAuthenticated(true);
+              // Continue with the refresh using the token from localStorage
+            } else {
+              logout();
+              return null;
+            }
+          } catch (error) {
+            console.error("Error parsing stored auth data:", error);
+            logout();
+            return null;
+          }
+        } else {
+          logout();
+          return null;
+        }
       }
+      
       // Updated to your eventmanagement project's API endpoint
       const response = await fetch(
         "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/refresh-token/",
@@ -100,10 +123,12 @@ export const AuthProvider = ({ children }) => {
         
         return data.access;
       } else {
+        // If refresh token is also expired, clear everything
         logout();
         return null;
       }
     } catch (error) {
+      console.error("Error refreshing token:", error);
       logout();
       return null;
     }

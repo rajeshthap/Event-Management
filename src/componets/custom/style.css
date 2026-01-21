@@ -113,6 +113,11 @@ body {
   color: #000000;
    margin-top: 8px !important;
 }
+.table-responsive-container {
+  overflow-x: auto;
+  width: 100%;
+  margin-bottom: 1rem;
+}
 .login-btn:hover{
   background-color: #0d77cb !important;
   border: 1px solid #0d77cb  !important;

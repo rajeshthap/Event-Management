@@ -27,6 +27,13 @@ import UserDashBoard from "./componets/user_dashboard/UserDashBoard";
 import AddHeader from "./componets/event_panel/header/AddHeader";
 import ManageHeader from "./componets/event_panel/header/ManageHeader";
 import TotalRegistration from "./componets/event_panel/totalregistration/TotalRegistration";
+import AddEvent from "./componets/event_panel/dashboard_pages/event_create/AddEvent";
+
+// import AboutUs from "./componets/pages/AboutUs";
+// import Admissions from "./componets/pages/about_us/Admissions";
+// import Faculty from "./componets/pages/about_us/Faculty";
+// import RegistrationModal from "./componets/pages/RegistrationModal";
+
 
 // import NavBar from "./componets/topnav/NavBar";
 // import Footer from "./componets/footer/Footer";
@@ -41,6 +48,7 @@ function App() {
     "/AddHeader", 
     "/ManageHeader",
     "/TotalRegistration",
+    "/AddEvent"
   ]);
 
   const shouldHideNavbar = hiddenPaths.has(location.pathname);
@@ -65,6 +73,7 @@ function App() {
               <Route path="/AddHeader" element={<AddHeader />} />
               <Route path="/ManageHeader" element={<ManageHeader />} />
                <Route path="/TotalRegistration" element={<TotalRegistration />} />
+               <Route path="/AddEvent" element={<AddEvent />} />
           
           </Routes>
         </main>

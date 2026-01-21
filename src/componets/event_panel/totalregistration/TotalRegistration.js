@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert, Card, Modal, Spinner, Badge, Table, Image, Pagination, Accordion } from "react-bootstrap";
+import { Container, Row, Col, Form, Button, Alert, Card, Spinner, Badge, Table, Image, Pagination, InputGroup } from "react-bootstrap";
 import "../../../assets/css/dashboard.css";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import { useAuthFetch } from "../../context/AuthFetch";
-import LeftNav from "../LeftNav";
-import "../../../assets/css/consultnow.css"
-import DashBoardHeader from "../DashBoardHeader";
+import { useAuth } from "../../context/AuthContext";
 import {
   FaUserMd, FaPhone, FaEnvelope, FaHome, FaVenusMars, FaRulerVertical, FaWeight, FaCalendarAlt,
   FaHospital, FaStethoscope, FaNotesMedical, FaUserClock, FaInfoCircle, FaExclamationTriangle,
@@ -14,8 +11,16 @@ import {
   FaRunning, FaClipboardList, FaUserMd as FaUser, FaIdCard, FaBaby, FaCut, FaUserNurse,
   FaFileMedical, FaAllergies, FaPills, FaThermometer, FaHandHoldingMedical, FaStar, FaCommentDots,
   FaCheckCircle, FaTimesCircle, FaQuoteLeft, FaQuoteRight, FaChartLine, FaHeart, FaUsers, FaMapMarkerAlt,
-  FaImage, FaLink, FaCertificate, FaBuilding, FaUserTie, FaGlobe, FaCity, FaInfo
+  FaImage, FaLink, FaCertificate, FaBuilding, FaUserTie, FaGlobe, FaCity, FaInfo, FaEye as FaViewIcon,
+  FaGraduationCap, FaTheaterMasks, FaMusic, FaPalette, FaCamera, FaMicrophone, FaBook, FaGamepad,
+  FaFilm, FaCode, FaLaptopCode, FaDesktop, FaPencilRuler, FaBullhorn, FaHandshake,
+  FaFilePdf, FaFileExcel, FaSearch
 } from "react-icons/fa";
+import LeftNav from "../LeftNav";
+import DashBoardHeader from "../DashBoardHeader";
+import jsPDF from "jspdf";
+import { autoTable } from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const TotalRegistration = () => {
   const { auth, logout, refreshAccessToken } = useAuth();
@@ -30,6 +35,7 @@ const TotalRegistration = () => {
 
   // State for registration entries
   const [entries, setEntries] = useState([]);
+  const [filteredEntries, setFilteredEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [showTable, setShowTable] = useState(false);
@@ -39,12 +45,89 @@ const TotalRegistration = () => {
   const [variant, setVariant] = useState("success"); // 'success' or 'danger'
   const [showAlert, setShowAlert] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
   // Base URL for API
   const API_BASE_URL = "https://mahadevaaya.com/eventmanagement/eventmanagement_backend";
+
+  // Function to get icon based on user type
+  const getUserTypeIcon = (userType) => {
+    const type = userType ? userType.toLowerCase() : '';
+    
+    if (type.includes('student') || type.includes('education')) {
+      return <FaGraduationCap />;
+    } else if (type.includes('artist') || type.includes('art')) {
+      return <FaPalette />;
+    } else if (type.includes('musician') || type.includes('music')) {
+      return <FaMusic />;
+    } else if (type.includes('actor') || type.includes('actress') || type.includes('theater')) {
+      return <FaTheaterMasks />;
+    } else if (type.includes('photographer') || type.includes('photo')) {
+      return <FaCamera />;
+    } else if (type.includes('singer') || type.includes('vocal')) {
+      return <FaMicrophone />;
+    } else if (type.includes('writer') || type.includes('author')) {
+      return <FaBook />;
+    } else if (type.includes('gamer') || type.includes('gaming')) {
+      return <FaGamepad />;
+    } else if (type.includes('filmmaker') || type.includes('director')) {
+      return <FaFilm />;
+    } else if (type.includes('developer') || type.includes('programmer')) {
+      return <FaCode />;
+    } else if (type.includes('designer') || type.includes('ui') || type.includes('ux')) {
+      return <FaPencilRuler />;
+    } else if (type.includes('speaker') || type.includes('presenter')) {
+      return <FaBullhorn />;
+    } else if (type.includes('entrepreneur') || type.includes('business')) {
+      return <FaHandshake />;
+    } else if (type.includes('doctor') || type.includes('medical')) {
+      return <FaUserMd />;
+    } else {
+      return <FaUser />;
+    }
+  };
+
+  // Function to get badge color based on user type
+  const getUserTypeBadgeColor = (userType) => {
+    const type = userType ? userType.toLowerCase() : '';
+    
+    if (type.includes('student') || type.includes('education')) {
+      return 'primary';
+    } else if (type.includes('artist') || type.includes('art')) {
+      return 'danger';
+    } else if (type.includes('musician') || type.includes('music')) {
+      return 'info';
+    } else if (type.includes('actor') || type.includes('actress') || type.includes('theater')) {
+      return 'warning';
+    } else if (type.includes('photographer') || type.includes('photo')) {
+      return 'dark';
+    } else if (type.includes('singer') || type.includes('vocal')) {
+      return 'success';
+    } else if (type.includes('writer') || type.includes('author')) {
+      return 'secondary';
+    } else if (type.includes('gamer') || type.includes('gaming')) {
+      return 'danger';
+    } else if (type.includes('filmmaker') || type.includes('director')) {
+      return 'dark';
+    } else if (type.includes('developer') || type.includes('programmer')) {
+      return 'info';
+    } else if (type.includes('designer') || type.includes('ui') || type.includes('ux')) {
+      return 'warning';
+    } else if (type.includes('speaker') || type.includes('presenter')) {
+      return 'primary';
+    } else if (type.includes('entrepreneur') || type.includes('business')) {
+      return 'success';
+    } else if (type.includes('doctor') || type.includes('medical')) {
+      return 'danger';
+    } else {
+      return 'secondary';
+    }
+  };
 
   // Check device width
   useEffect(() => {
@@ -75,16 +158,7 @@ const TotalRegistration = () => {
       });
 
       // If unauthorized, try refreshing token and retry once
-      if (response.status === 401) {
-        const newAccess = await refreshAccessToken();
-        if (!newAccess) throw new Error("Session expired");
-        response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${newAccess}`,
-          },
-        });
-      }
+   
 
       if (!response.ok) {
         throw new Error("Failed to fetch registration entries");
@@ -123,6 +197,7 @@ const TotalRegistration = () => {
       });
 
       setEntries(processedEntries);
+      setFilteredEntries(processedEntries);
     } catch (error) {
       console.error("Error fetching registration entries:", error);
       setMessage(error.message || "An error occurred while fetching registration entries");
@@ -139,68 +214,212 @@ const TotalRegistration = () => {
     fetchEntries();
   }, []);
 
+  // Filter entries based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredEntries(entries);
+    } else {
+      const filtered = entries.filter(entry => {
+        const query = searchQuery.toLowerCase();
+        return (
+          (entry.full_name && entry.full_name.toLowerCase().includes(query)) ||
+          (entry.user_type && entry.user_type.toLowerCase().includes(query)) ||
+          (entry.phone && entry.phone.toLowerCase().includes(query)) ||
+          (entry.email && entry.email.toLowerCase().includes(query)) ||
+          (entry.city && entry.city.toLowerCase().includes(query)) ||
+          (entry.state && entry.state.toLowerCase().includes(query)) ||
+          (entry.team_name && entry.team_name.toLowerCase().includes(query))
+        );
+      });
+      setFilteredEntries(filtered);
+    }
+    // Reset to first page when search changes
+    setCurrentPage(1);
+  }, [searchQuery, entries]);
+
   // Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = entries.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(entries.length / itemsPerPage);
+  const currentItems = filteredEntries.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
   
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Function to render talent scope as badges
-  const renderTalentScope = (talentScope) => {
-    if (!talentScope || talentScope.length === 0) {
-      return <span className="text-muted">Not specified</span>;
-    }
+  // Function to download data as PDF
+  const downloadPDF = () => {
+    const doc = new jsPDF('l'); // Use landscape orientation for better fit
+    doc.setFontSize(18);
+    doc.text("Registration Data", 14, 22);
     
-    return (
-      <div className="d-flex flex-wrap gap-1">
-        {talentScope.map((talent, index) => (
-          <Badge key={index} bg="secondary">
-            {talent}
-          </Badge>
-        ))}
-      </div>
-    );
+    // Add date
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    // Prepare table data with all fields
+    const tableData = filteredEntries.map(entry => [
+      entry.full_name || '',
+      entry.user_type || '',
+      entry.phone || '',
+      entry.email || '',
+      entry.gender || '',
+      entry.address || '',
+      entry.city || '',
+      entry.state || '',
+      entry.country || '',
+      entry.team_name || 'N/A',
+      entry.talent_scope ? entry.talent_scope.join(', ') : '',
+      entry.introduction || '',
+      entry.formatted_created_date || entry.created_at || ''
+    ]);
+    
+    // Add table using autoTable from jspdf-autotable
+    autoTable(doc, {
+      head: [['Name', 'User Type', 'Phone', 'Email', 'Gender', 'Address', 'City', 'State', 'Country', 'Team', 'Talent Scope', 'Introduction', 'Registration Date']],
+      body: tableData,
+      startY: 40,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 123, 255] },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 15 },
+        5: { cellWidth: 30 },
+        6: { cellWidth: 20 },
+        7: { cellWidth: 20 },
+        8: { cellWidth: 20 },
+        9: { cellWidth: 20 },
+        10: { cellWidth: 30 },
+        11: { cellWidth: 40 },
+        12: { cellWidth: 25 }
+      }
+    });
+    
+    // Save the PDF
+    doc.save("registration_data.pdf");
   };
 
-  // Function to render social media links
-  const renderSocialLinks = (links) => {
-    if (!links || links.length === 0) {
-      return <span className="text-muted">Not specified</span>;
-    }
+  // Function to download data as Excel
+  const downloadExcel = () => {
+    // Prepare data for Excel with all fields
+    const excelData = filteredEntries.map(entry => ({
+      'Full Name': entry.full_name || '',
+      'User Type': entry.user_type || '',
+      'Phone': entry.phone || '',
+      'Email': entry.email || '',
+      'Gender': entry.gender || '',
+      'Address': entry.address || '',
+      'City': entry.city || '',
+      'State': entry.state || '',
+      'Country': entry.country || '',
+      'Team Name': entry.team_name || '',
+      'Talent Scope': entry.talent_scope ? entry.talent_scope.join(', ') : '',
+      'Introduction': entry.introduction || '',
+      'Registration Date': entry.formatted_created_date || entry.created_at || ''
+    }));
     
-    return (
-      <div className="d-flex flex-column gap-1">
-        {links.map((link, index) => (
-          <a key={index} href={link} target="_blank" rel="noopener noreferrer" className="text-primary">
-            <FaLink className="me-1" />
-            {link}
-          </a>
-        ))}
-      </div>
-    );
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // Convert data to worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
+    
+    // Generate Excel file and download
+    XLSX.writeFile(workbook, "registration_data.xlsx");
   };
 
-  // Function to render certificates
-  const renderCertificates = (certificates, title) => {
-    if (!certificates) {
-      return <span className="text-muted">Not uploaded</span>;
-    }
-    
-    return (
-      <div className="d-flex flex-column gap-2">
-        {typeof certificates === 'string' ? (
-          <a href={`${API_BASE_URL}${certificates}`} target="_blank" rel="noopener noreferrer" className="text-primary">
-            <FaCertificate className="me-1" />
-            {title}
-          </a>
-        ) : (
-          <span className="text-muted">Not uploaded</span>
-        )}
-      </div>
-    );
-  };
+  // Function to render mobile card view with all fields
+  const renderMobileCard = (entry, index) => (
+    <Card key={entry.id || entry.user_id} className="mb-3">
+      <Card.Body>
+        <div className="d-flex align-items-center mb-3">
+          <div className="consultation-avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+            {entry.profile_image ? (
+              <Image 
+                src={`${API_BASE_URL}${entry.profile_image}`} 
+                alt={entry.full_name}
+                className="rounded-circle"
+                width="40"
+                height="40"
+              />
+            ) : (
+              entry.full_name ? entry.full_name.charAt(0).toUpperCase() : 'U'
+            )}
+          </div>
+          <div className="flex-grow-1">
+            <h5 className="mb-0">{entry.full_name}</h5>
+            <Badge bg={getUserTypeBadgeColor(entry.user_type)} className="py-1 px-2">
+              <span className="me-1">{getUserTypeIcon(entry.user_type)}</span>
+              {entry.user_type}
+            </Badge>
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-6 mb-2">
+            <small className="text-muted d-block">#</small>
+            <span>{indexOfFirstItem + index + 1}</span>
+          </div>
+          <div className="col-6 mb-2">
+            <small className="text-muted d-block">Phone</small>
+            <span>{entry.phone}</span>
+          </div>
+          <div className="col-12 mb-2">
+            <small className="text-muted d-block">Email</small>
+            <span className="text-truncate d-block">{entry.email}</span>
+          </div>
+          <div className="col-6 mb-2">
+            <small className="text-muted d-block">Gender</small>
+            <span>{entry.gender}</span>
+          </div>
+          <div className="col-6 mb-2">
+            <small className="text-muted d-block">Team</small>
+            <span>{entry.team_name || 'N/A'}</span>
+          </div>
+          <div className="col-12 mb-2">
+            <small className="text-muted d-block">Address</small>
+            <span>{entry.address || 'N/A'}</span>
+          </div>
+          <div className="col-4 mb-2">
+            <small className="text-muted d-block">City</small>
+            <span>{entry.city}</span>
+          </div>
+          <div className="col-4 mb-2">
+            <small className="text-muted d-block">State</small>
+            <span>{entry.state}</span>
+          </div>
+          <div className="col-4 mb-2">
+            <small className="text-muted d-block">Country</small>
+            <span>{entry.country}</span>
+          </div>
+          <div className="col-12 mb-2">
+            <small className="text-muted d-block">Talent Scope</small>
+            <div className="d-flex flex-wrap gap-1 mt-1">
+              {entry.talent_scope && entry.talent_scope.length > 0 ? 
+                entry.talent_scope.map((talent, index) => (
+                  <Badge key={index} bg="secondary" className="py-1 px-2">
+                    {talent}
+                  </Badge>
+                )) : 
+                <span>Not specified</span>
+              }
+            </div>
+          </div>
+          <div className="col-12 mb-2">
+            <small className="text-muted d-block">Introduction</small>
+            <p className="mb-0 mt-1">{entry.introduction || 'No introduction provided.'}</p>
+          </div>
+          <div className="col-12">
+            <small className="text-muted d-block">Registration Date</small>
+            <span>{entry.formatted_created_date || entry.created_at}</span>
+          </div>
+        </div>
+      </Card.Body>
+    </Card>
+  );
 
   return (
     <>
@@ -214,14 +433,10 @@ const TotalRegistration = () => {
         />
 
         {/* Main Content */}
-        <div className="main-content">
+        <div className="main-content-dash">
           <DashBoardHeader toggleSidebar={toggleSidebar} />
 
           <Container fluid className="dashboard-body dashboard-main-container">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="page-title mb-0">Total Registrations</h1>
-            </div>
-
             {/* Alert for success/error messages */}
             {showAlert && (
               <Alert
@@ -258,14 +473,13 @@ const TotalRegistration = () => {
                         </div>
                         <div className="text-end">
                           <h2 className="display-4 fw-bold text-success">{entries.length}</h2>
-                         
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
                 </Row>
 
-                {/* Registration Entries Accordion */}
+                {/* Registration Entries Table */}
                 {showTable && (
                   <>
                     {isFetching && (
@@ -276,212 +490,140 @@ const TotalRegistration = () => {
                       </div>
                     )}
                     
-                    {entries.length === 0 ? (
+                    {/* Search and Download Controls */}
+                    <Row className="mb-3">
+                      <Col md={6}>
+                        <InputGroup>
+                          <InputGroup.Text>
+                            <FaSearch />
+                          </InputGroup.Text>
+                          <Form.Control
+                            type="text"
+                            placeholder="Search by name, type, email, city..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </InputGroup>
+                      </Col>
+                      <Col md={6} className="text-md-end mt-2 mt-md-0">
+                        <Button 
+                          variant="danger" 
+                          className="me-2"
+                          onClick={downloadPDF}
+                          disabled={filteredEntries.length === 0}
+                        >
+                          <FaFilePdf className="me-1" /> Download PDF
+                        </Button>
+                        <Button 
+                          variant="success" 
+                          onClick={downloadExcel}
+                          disabled={filteredEntries.length === 0}
+                        >
+                          <FaFileExcel className="me-1" /> Download Excel
+                        </Button>
+                      </Col>
+                    </Row>
+                    
+                    {filteredEntries.length === 0 ? (
                       <div className="text-center my-5">
-                        <p>No registration entries found.</p>
+                        <p>{searchQuery ? "No matching registration entries found." : "No registration entries found."}</p>
                       </div>
                     ) : (
                       <>
-                        <Accordion defaultActiveKey="0">
-                          {currentItems.map((entry, index) => (
-                            <Accordion.Item eventKey={entry.id || index.toString()} key={entry.id || index}>
-                              <Accordion.Header>
-                                <div className="d-flex align-items-center w-100">
-                                  <div className="consultation-avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                    {entry.profile_image ? (
-                                      <Image 
-                                        src={`${API_BASE_URL}${entry.profile_image}`} 
-                                        alt={entry.full_name}
-                                        className="rounded-circle"
-                                        width="40"
-                                        height="40"
-                                      />
-                                    ) : (
-                                      entry.full_name ? entry.full_name.charAt(0).toUpperCase() : 'U'
-                                    )}
-                                  </div>
-                                  <div className="flex-grow-1">
-                                    <h5 className="mb-0">{entry.full_name}</h5>
-                                    <small>{entry.user_type} | {entry.phone} | {entry.email}</small>
-                                  </div>
-                                  <div className="text-end me-3">
-                                    <FaCalendarAlt className="me-1" />
-                                    <small>{entry.formatted_created_date || entry.created_at}</small>
-                                  </div>
-                                </div>
-                              </Accordion.Header>
-                              
-                              <Accordion.Body>
-                                <Card className="consultation-card shadow-sm">
-                                  <Card.Body className="p-4">
-                                    <Row>
-                                      {/* Left Column: Basic Information */}
-                                      <Col md={6} className="mb-4 mb-md-0">
-                                        <h6 className="section-title text-success"><FaUser className="me-2" />Basic Information</h6>
-                                        <div className="info-group">
-                                          <div className="info-item">
-                                            <span className="info-label"><FaIdCard className="me-2 text-success" />User ID:</span>
-                                            <span className="info-value">{entry.user_id}</span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaUserTie className="me-2 text-success" />User Type:</span>
-                                            <span className="info-value">{entry.user_type}</span>
-                                          </div>
-                                          {entry.team_name && (
-                                            <div className="info-item">
-                                              <span className="info-label"><FaBuilding className="me-2 text-success" />Team Name:</span>
-                                              <span className="info-value">{entry.team_name}</span>
-                                            </div>
-                                          )}
-                                          <div className="info-item">
-                                            <span className="info-label"><FaVenusMars className="me-2 text-success" />Gender:</span>
-                                            <span className="info-value">{entry.gender}</span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaPhone className="me-2 text-success" />Phone:</span>
-                                            <span className="info-value">{entry.phone}</span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaEnvelope className="me-2 text-success" />Email:</span>
-                                            <span className="info-value">{entry.email}</span>
-                                          </div>
-                                        </div>
-                                      </Col>
+                        {/* Desktop Table View with all fields */}
+                        {!isMobile && (
+                          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                            <Table striped bordered hover className="align-middle">
+                              <thead>
+                                <tr>
+                                  <th>#</th>
+                                  <th>Profile</th>
+                                  <th>Full Name</th>
+                                  <th>User Type</th>
+                                  <th>Phone</th>
+                                  <th>Email</th>
+                                  <th>Gender</th>
+                                  <th>Address</th>
+                                  <th>City</th>
+                                  <th>State</th>
+                                  <th>Country</th>
+                                  <th>Team</th>
+                                  <th>Talent Scope</th>
+                                  <th>Introduction</th>
+                                  <th>Registration Date</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {currentItems.map((entry, index) => (
+                                  <tr key={entry.id || entry.user_id}>
+                                    <td>{indexOfFirstItem + index + 1}</td>
+                                    <td>
+                                      <div className="consultation-avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
+                                        {entry.profile_image ? (
+                                          <Image 
+                                            src={`${API_BASE_URL}${entry.profile_image}`} 
+                                            alt={entry.full_name}
+                                            className="rounded-circle"
+                                            width="40"
+                                            height="40"
+                                          />
+                                        ) : (
+                                          entry.full_name ? entry.full_name.charAt(0).toUpperCase() : 'U'
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td>{entry.full_name}</td>
+                                    <td>
+                                      <Badge bg={getUserTypeBadgeColor(entry.user_type)} className="py-1 px-2">
+                                        <span className="me-1">{getUserTypeIcon(entry.user_type)}</span>
+                                        {entry.user_type}
+                                      </Badge>
+                                    </td>
+                                    <td>{entry.phone}</td>
+                                    <td>{entry.email}</td>
+                                    <td>{entry.gender}</td>
+                                    <td>{entry.address || 'N/A'}</td>
+                                    <td>{entry.city}</td>
+                                    <td>{entry.state}</td>
+                                    <td>{entry.country}</td>
+                                    <td>{entry.team_name || 'N/A'}</td>
+                                    <td>
+                                      <div className="d-flex flex-wrap gap-1">
+                                        {entry.talent_scope && entry.talent_scope.length > 0 ? 
+                                          entry.talent_scope.map((talent, index) => (
+                                            <Badge key={index} bg="secondary" className="py-1 px-2">
+                                              {talent}
+                                            </Badge>
+                                          )) : 
+                                          <span>Not specified</span>
+                                        }
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {entry.introduction || 'No introduction provided.'}
+                                      </div>
+                                    </td>
+                                    <td>{entry.formatted_created_date || entry.created_at}</td>
+                                  </tr>
+                                ))}
+                                {currentItems.length > 0 && (
+                                  <tr className="table-primary fw-bold">
+                                    <td colSpan={3}>Total</td>
+                                    <td colSpan={12}>{filteredEntries.length} Registrations</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </Table>
+                          </div>
+                        )}
 
-                                      {/* Right Column: Address */}
-                                      <Col md={6} className="mb-4 mb-md-0">
-                                        <h6 className="section-title text-success"><FaMapMarkerAlt className="me-2" />Address Information</h6>
-                                        <div className="info-group">
-                                          <div className="info-item">
-                                            <span className="info-label"><FaHome className="me-2 text-success" />Address:</span>
-                                            <span className="info-value">{entry.address}</span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaCity className="me-2 text-success" />City:</span>
-                                            <span className="info-value">{entry.city}</span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaMapMarkerAlt className="me-2 text-success" />State:</span>
-                                            <span className="info-value">{entry.state}</span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaGlobe className="me-2 text-success" />Country:</span>
-                                            <span className="info-value">{entry.country}</span>
-                                          </div>
-                                        </div>
-                                      </Col>
-                                    </Row>
-                                    
-                                    <Row>
-                                      {/* Profile & Talent Section */}
-                                      <Col md={6} className="mb-4">
-                                        <h6 className="section-title text-success"><FaStar className="me-2" />Profile & Talent</h6>
-                                        <div className="info-group">
-                                          <div className="info-item">
-                                            <span className="info-label"><FaImage className="me-2 text-success" />Profile Image:</span>
-                                            <span className="info-value">
-                                              {entry.profile_image ? (
-                                                <a href={`${API_BASE_URL}${entry.profile_image}`} target="_blank" rel="noopener noreferrer" className="text-primary">
-                                                  View Image
-                                                </a>
-                                              ) : (
-                                                <span className="text-muted">Not uploaded</span>
-                                              )}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaStar className="me-2 text-success" />Talent Scope:</span>
-                                            <span className="info-value">
-                                              {renderTalentScope(entry.talent_scope)}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaLink className="me-2 text-success" />Social Media Links:</span>
-                                            <span className="info-value">
-                                              {renderSocialLinks(entry.social_media_link)}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label"><FaLink className="me-2 text-success" />Additional Links:</span>
-                                            <span className="info-value">
-                                              {renderSocialLinks(entry.additional_link)}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </Col>
-
-                                      {/* Portfolio & Certificates Section */}
-                                      <Col md={6} className="mb-4">
-                                        <h6 className="section-title text-success"><FaCertificate className="me-2" />Portfolio & Certificates</h6>
-                                        <div className="info-group">
-                                          <div className="info-item">
-                                            <span className="info-label"><FaFileMedical className="me-2 text-success" />Portfolio File:</span>
-                                            <span className="info-value">
-                                              {entry.portfolio_file ? (
-                                                <a href={`${API_BASE_URL}${entry.portfolio_file}`} target="_blank" rel="noopener noreferrer" className="text-primary">
-                                                  View Portfolio
-                                                </a>
-                                              ) : (
-                                                <span className="text-muted">Not uploaded</span>
-                                              )}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label">National Level Certificate:</span>
-                                            <span className="info-value">
-                                              {renderCertificates(entry.national_level_certificate, "National Level Certificate")}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label">International Certificate:</span>
-                                            <span className="info-value">
-                                              {renderCertificates(entry.internation_level_certificate_award, "International Certificate")}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label">State Level Certificate:</span>
-                                            <span className="info-value">
-                                              {renderCertificates(entry.state_level_certificate, "State Level Certificate")}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label">District Level Certificate:</span>
-                                            <span className="info-value">
-                                              {renderCertificates(entry.district_level_certificate, "District Level Certificate")}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label">College Level Certificate:</span>
-                                            <span className="info-value">
-                                              {renderCertificates(entry.college_level_certificate, "College Level Certificate")}
-                                            </span>
-                                          </div>
-                                          <div className="info-item">
-                                            <span className="info-label">Other Certificate:</span>
-                                            <span className="info-value">
-                                              {renderCertificates(entry.other_certificate, "Other Certificate")}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </Col>
-                                    </Row>
-                                    
-                                    <Row>
-                                      <Col md={12}>
-                                        <h6 className="section-title text-success"><FaInfo className="me-2" />Introduction</h6>
-                                        <div className="info-group">
-                                          <div className="info-item">
-                                            <span className="info-value">{entry.introduction}</span>
-                                          </div>
-                                        </div>
-                                      </Col>
-                                    </Row>
-                                  </Card.Body>
-                                </Card>
-                              </Accordion.Body>
-                            </Accordion.Item>
-                          ))}
-                        </Accordion>
+                        {/* Mobile Card View */}
+                        {isMobile && (
+                          <div>
+                            {currentItems.map((entry, index) => renderMobileCard(entry, index))}
+                          </div>
+                        )}
                         
                         {/* Pagination */}
                         {totalPages > 1 && (

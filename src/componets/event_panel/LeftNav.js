@@ -57,13 +57,7 @@ const menuItems = [
       path: "/DashBoard",
       active: true,
     },
-    {
-      icon: <FaTachometerAlt />,
-      label: "Header",
-      path: "/Header",
-      active: true,
-    },
-
+   
       {
       icon: <FaTachometerAlt />,
       label: "Total Registration",
@@ -71,10 +65,7 @@ const menuItems = [
       active: true,
     },
 
-    
-   
 
-  
    {
   icon: <FaInfoCircle />,   // About Us main
   label: "Header",
@@ -101,45 +92,12 @@ const menuItems = [
     },
   ],
 },
-{
-  icon: <FaBullseye />, // Our Focus main
-  label: "Our Focus",
-  submenu: [
-    {
-      label: "Add Auto-Immune Diseases",
-      path: "/#",
-      icon: <FaPlusSquare />, // add focus
-    },
-    {
-      label: "Manage Auto-Immune Diseases",
-      path: "#",
-      icon: <FaTasks />, // manage focus
-    },
-
-   
-   
-
-     
-
-   
-    {
-      label: "Manage Own Manufacturing",
-      path: "#",
-      icon: <FaTasks />, // manage focus
-    },
-  ],
-},
 
 
 
    
 
-     {
-      icon: <FaTachometerAlt />,
-      label: "Manage Hero Section",
-      path: "/ManageHeroSection",
-      active: true,
-    },
+ 
     
     
   
