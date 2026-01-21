@@ -68,6 +68,33 @@ const menuItems = [
 
    {
   icon: <FaInfoCircle />,   // About Us main
+  label: "Event",
+  submenu: [
+    {
+      label: "Add Evetn",
+      path: "/AddEvent",
+      icon: <FaUserCircle />, // profile
+    },
+     {
+          label: "Manage Event",
+          path: "/ManageEvent",
+          icon: <FaImage />,
+        },
+    {
+      label: "Add About Us",
+      path: "/AddAboutUs",
+      icon: <FaEdit />, // add/edit content
+    },
+    {
+      label: "Manage About Us",
+      path: "/ManageAboutUs",
+      icon: <FaListUl />, // manage/list
+    },
+  ],
+},
+
+   {
+  icon: <FaInfoCircle />,   // About Us main
   label: "Header",
   submenu: [
     {
@@ -92,7 +119,6 @@ const menuItems = [
     },
   ],
 },
-
 
 
    

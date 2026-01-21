@@ -1,59 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert, Card, Image } from "react-bootstrap";
-import "../../../assets/css/dashboard.css";
+import { Container, Form, Button, Alert, Row, Col, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-
-
-import { FaCalendarAlt, FaMapMarkerAlt, FaUser, FaClock, FaMoneyBillWave, FaTag, FaImage, FaLink, FaUsers, FaInfoCircle } from "react-icons/fa";
-import DashBoardHeader from "../../DashBoardHeader";
 import LeftNav from "../../LeftNav";
+import DashBoardHeader from "../../DashBoardHeader";
+import { FaCalendarAlt, FaMapMarkerAlt, FaInfoCircle, FaSave } from "react-icons/fa";
 import { useAuthFetch } from "../../../context/AuthFetch";
-import { useAuth } from "../../../context/AuthContext";
 
 const AddEvent = () => {
-  const { auth, logout, refreshAccessToken } = useAuth();
-  const admin_id = auth?.unique_id;
-  
-  console.log("Admin ID:", admin_id);
-  const authFetch = useAuthFetch();
   const navigate = useNavigate();
+  const authFetch = useAuthFetch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  
-  // Form state for Event with all fields
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Form state
   const [formData, setFormData] = useState({
     event_name: "",
     description: "",
     event_date_time: "",
-    venue: "",
-    event_type: "",
-    organizer_name: "",
-    organizer_contact: "",
-    organizer_email: "",
-    registration_deadline: "",
-    max_participants: "",
-    event_image: null,
-    event_status: "upcoming",
-    registration_fee: "",
-    event_category: "",
-    tags: "",
-    is_featured: false,
-    event_link: "",
-    additional_notes: ""
+    venue: ""
   });
-  
-  // State for image preview
-  const [imagePreview, setImagePreview] = useState(null);
-  
-  // State for description validation error
-  const [descriptionError, setDescriptionError] = useState("");
-  
-  // Submission state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [variant, setVariant] = useState("success"); // 'success' or 'danger'
-  const [showAlert, setShowAlert] = useState(false);
+
+  // Validation errors
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Check device width
   useEffect(() => {
@@ -72,187 +44,107 @@ const AddEvent = () => {
 
   // Handle form input changes
   const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
     
-    if (type === "file") {
-      // Handle file upload for event image
-      const file = files[0];
-      if (file) {
-        setFormData(prev => ({
-          ...prev,
-          [name]: file
-        }));
-        
-        // Create preview for image
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    } else if (type === "checkbox") {
-      // Handle checkbox for is_featured
-      setFormData(prev => ({
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
         ...prev,
-        [name]: checked
+        [name]: ""
       }));
-    } else {
-      // Handle text inputs, selects, etc.
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-      
-      // Validate description length
-      if (name === "description") {
-        const wordCount = value.trim().split(/\s+/).length;
-        if (value.trim() === "") {
-          setDescriptionError("Description is required.");
-        } else if (wordCount <= 10) {
-          setDescriptionError(`Description must be more than 10 words. You have entered ${wordCount} words.`);
-        } else {
-          setDescriptionError(""); // Clear error if valid
-        }
-      }
     }
   };
 
-  // Clear form function
-  const clearForm = () => {
-    setFormData({
-      event_name: "",
-      description: "",
-      event_date_time: "",
-      venue: "",
-      event_type: "",
-      organizer_name: "",
-      organizer_contact: "",
-      organizer_email: "",
-      registration_deadline: "",
-      max_participants: "",
-      event_image: null,
-      event_status: "upcoming",
-      registration_fee: "",
-      event_category: "",
-      tags: "",
-      is_featured: false,
-      event_link: "",
-      additional_notes: ""
-    });
-    setImagePreview(null);
-    setMessage("");
-    setShowAlert(false);
-    setDescriptionError("");
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.event_name.trim()) {
+      errors.event_name = "Event name is required";
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = "Description is required";
+    } else if (formData.description.length < 10) {
+      errors.description = "Description must be at least 10 characters";
+    }
+    
+    if (!formData.event_date_time) {
+      errors.event_date_time = "Event date and time is required";
+    } else {
+      const selectedDate = new Date(formData.event_date_time);
+      const now = new Date();
+      if (selectedDate < now) {
+        errors.event_date_time = "Event date cannot be in the past";
+      }
+    }
+    
+    if (!formData.venue.trim()) {
+      errors.venue = "Venue is required";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  // Handle form submission (POST request)
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check for validation errors before submitting
-    if (descriptionError) {
-      setMessage("Please fix the validation errors before submitting.");
-      setVariant("danger");
-      setShowAlert(true);
+    if (!validateForm()) {
       return;
     }
     
-    setIsSubmitting(true);
-    setShowAlert(false);
+    setLoading(true);
+    setError("");
+    setSuccess("");
     
     try {
-      // Create a FormData object to send the data
-      const dataToSend = new FormData();
+     const response = await authFetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/', {
+       method: 'POST',
+       body: JSON.stringify(formData)
+     });
       
-      // Add all form fields to FormData
-      Object.keys(formData).forEach(key => {
-        if (key === 'event_image' && formData[key] instanceof File) {
-          dataToSend.append(key, formData[key]);
-        } else if (key !== 'event_image') {
-          dataToSend.append(key, formData[key]);
-        }
-      });
+      const data = await response.json();
       
-      console.log("Submitting event data:");
-      for (let pair of dataToSend.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
-      
-      // Use fetch directly for FormData
-      const url = "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/";
-      let response = await fetch(url, {
-        method: "POST",
-        body: dataToSend,
-        headers: {
-          Authorization: `Bearer ${auth?.access}`,
-        },
-      });
-      
-      // If unauthorized, try refreshing token and retry once
-      if (response.status === 401) {
-        const newAccess = await refreshAccessToken();
-        if (!newAccess) throw new Error("Session expired");
-        response = await fetch(url, {
-          method: "POST",
-          body: dataToSend,
-          headers: {
-            Authorization: `Bearer ${newAccess}`,
-          },
+      if (response.ok) {
+        setSuccess("Event created successfully!");
+        // Reset form
+        setFormData({
+          event_name: "",
+          description: "",
+          event_date_time: "",
+          venue: ""
         });
-      }
-      
-      console.log("POST Response status:", response.status);
-      
-      // Handle bad API responses
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData = null;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          /* not JSON */
-        }
-        console.error("Server error response:", errorData || errorText);
-        throw new Error((errorData && errorData.message) || "Failed to add event");
-      }
-      
-      // SUCCESS PATH
-      const result = await response.json();
-      console.log("POST Success response:", result);
-      
-      if (result.success) {
-        setMessage("Event added successfully!");
-        setVariant("success");
-        setShowAlert(true);
-        clearForm();
         
-        // Hide success alert after 3 seconds
-        setTimeout(() => setShowAlert(false), 3000);
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          navigate('/ManageEvent'); // or your events list page
+        }, 2000);
       } else {
-        throw new Error(result.message || "Failed to add event");
+        setError(data.message || "Failed to create event. Please try again.");
       }
-      
-    } catch (error) {
-      // FAILURE PATH
-      console.error("Error adding event:", error);
-      let errorMessage = "An unexpected error occurred. Please try again.";
-      
-      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        errorMessage = "Network error: Could not connect to the server. Please check the API endpoint.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setMessage(errorMessage);
-      setVariant("danger");
-      setShowAlert(true);
-      
-      // Hide error alert after 5 seconds
-      setTimeout(() => setShowAlert(false), 5000);
-      
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
+      console.error('Error creating event:', err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
+  };
+
+  // Format date for input min attribute (current date/time)
+  const getMinDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   return (
@@ -267,344 +159,190 @@ const AddEvent = () => {
         />
 
         {/* Main Content */}
-        <div className="main-content">
+        <div className="main-content-dash">
           <DashBoardHeader toggleSidebar={toggleSidebar} />
 
-          <Container fluid className="dashboard-body dashboard-main-container">
-            <h1 className="page-title">Add Event</h1>
-            
-            {/* Alert for success/error messages */}
-            {showAlert && (
-              <Alert variant={variant} className="mb-4" onClose={() => setShowAlert(false)} dismissible>
-                {message}
+          <Container fluid className="dashboard-body dashboard-main-container py-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h1 className="page-title mb-1">Add New Event</h1>
+                <p className="text-muted mb-0">Create a new event for your organization</p>
+              </div>
+            </div>
+
+            {/* Alert Messages */}
+            {error && (
+              <Alert variant="danger" dismissible onClose={() => setError("")}>
+                {error}
               </Alert>
             )}
             
-            <Form onSubmit={handleSubmit}>
-              {/* Basic Event Information */}
-              <Card className="mb-4">
-                <Card.Header as="h5">Basic Event Information</Card.Header>
-                <Card.Body>
+            {success && (
+              <Alert variant="success" dismissible onClose={() => setSuccess("")}>
+                {success}
+              </Alert>
+            )}
+
+            {/* Event Form */}
+            <Card className="shadow-sm">
+              <Card.Body className="p-4">
+                <Form onSubmit={handleSubmit}>
                   <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaInfoCircle className="me-2" />Event Name</Form.Label>
+                    {/* Event Name */}
+                    <Col md={6} className="mb-3">
+                      <Form.Group>
+                        <Form.Label className="d-flex align-items-center">
+                          <FaInfoCircle className="me-2 text-primary" />
+                          Event Name <span className="text-danger ms-1">*</span>
+                        </Form.Label>
                         <Form.Control
                           type="text"
-                          placeholder="Enter event name"
                           name="event_name"
                           value={formData.event_name}
                           onChange={handleChange}
-                          required
+                          placeholder="Enter event name"
+                          isInvalid={!!validationErrors.event_name}
+                          className="form-control-lg"
                         />
+                        <Form.Control.Feedback type="invalid">
+                          {validationErrors.event_name}
+                        </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
 
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaTag className="me-2" />Event Category</Form.Label>
-                        <Form.Select
-                          name="event_category"
-                          value={formData.event_category}
+                    {/* Venue */}
+                    <Col md={6} className="mb-3">
+                      <Form.Group>
+                        <Form.Label className="d-flex align-items-center">
+                          <FaMapMarkerAlt className="me-2 text-danger" />
+                          Venue <span className="text-danger ms-1">*</span>
+                        </Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="venue"
+                          value={formData.venue}
                           onChange={handleChange}
-                          required
-                        >
-                          <option value="">Select category</option>
-                          <option value="conference">Conference</option>
-                          <option value="workshop">Workshop</option>
-                          <option value="seminar">Seminar</option>
-                          <option value="cultural">Cultural</option>
-                          <option value="sports">Sports</option>
-                          <option value="social">Social</option>
-                          <option value="other">Other</option>
-                        </Form.Select>
+                          placeholder="Enter event venue"
+                          isInvalid={!!validationErrors.venue}
+                          className="form-control-lg"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {validationErrors.venue}
+                        </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
                   </Row>
-                  
+
                   <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaCalendarAlt className="me-2" />Event Date & Time</Form.Label>
+                    {/* Date and Time */}
+                    <Col md={6} className="mb-3">
+                      <Form.Group>
+                        <Form.Label className="d-flex align-items-center">
+                          <FaCalendarAlt className="me-2 text-success" />
+                          Date & Time <span className="text-danger ms-1">*</span>
+                        </Form.Label>
                         <Form.Control
                           type="datetime-local"
                           name="event_date_time"
                           value={formData.event_date_time}
                           onChange={handleChange}
-                          required
+                          min={getMinDateTime()}
+                          isInvalid={!!validationErrors.event_date_time}
+                          className="form-control-lg"
                         />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaClock className="me-2" />Registration Deadline</Form.Label>
-                        <Form.Control
-                          type="datetime-local"
-                          name="registration_deadline"
-                          value={formData.registration_deadline}
-                          onChange={handleChange}
-                          required
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaMapMarkerAlt className="me-2" />Venue</Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder="Enter venue"
-                          name="venue"
-                          value={formData.venue}
-                          onChange={handleChange}
-                          required
-                        />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaLink className="me-2" />Event Link (for virtual events)</Form.Label>
-                        <Form.Control
-                          type="url"
-                          placeholder="Enter event link"
-                          name="event_link"
-                          value={formData.event_link}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Description (must be more than 10 words)</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={4}
-                      placeholder="Enter event description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      required
-                      isInvalid={!!descriptionError}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {descriptionError}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Card.Body>
-              </Card>
-              
-              {/* Event Image */}
-              <Card className="mb-4">
-                <Card.Header as="h5">Event Image</Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaImage className="me-2" />Upload Event Image</Form.Label>
-                        <Form.Control
-                          type="file"
-                          accept="image/*"
-                          name="event_image"
-                          onChange={handleChange}
-                        />
+                        <Form.Control.Feedback type="invalid">
+                          {validationErrors.event_date_time}
+                        </Form.Control.Feedback>
                         <Form.Text className="text-muted">
-                          Supported formats: JPG, PNG, GIF. Max size: 5MB.
+                          Select a future date and time for the event
                         </Form.Text>
                       </Form.Group>
                     </Col>
-                    <Col md={6}>
-                      {imagePreview && (
-                        <div className="image-preview-container">
-                          <p className="mb-2">Image Preview:</p>
-                          <Image src={imagePreview} alt="Event preview" thumbnail style={{ maxWidth: '200px' }} />
-                        </div>
+                  </Row>
+
+                  {/* Description */}
+                  <Row>
+                    <Col md={12} className="mb-4">
+                      <Form.Group>
+                        <Form.Label className="d-flex align-items-center">
+                          <FaInfoCircle className="me-2 text-info" />
+                          Description <span className="text-danger ms-1">*</span>
+                        </Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleChange}
+                          placeholder="Enter event description"
+                          rows={4}
+                          isInvalid={!!validationErrors.description}
+                          className="form-control-lg"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {validationErrors.description}
+                        </Form.Control.Feedback>
+                        <Form.Text className="text-muted">
+                          Provide a detailed description of the event (minimum 10 characters)
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  {/* Form Actions */}
+                  <div className="d-flex justify-content-end gap-2">
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      onClick={() => navigate('/events')}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="lg"
+                      disabled={loading}
+                      className="px-4"
+                    >
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <FaSave className="me-2" />
+                          Create Event
+                        </>
                       )}
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-              
-              {/* Organizer Information */}
-              <Card className="mb-4">
-                <Card.Header as="h5">Organizer Information</Card.Header>
+                    </Button>
+                  </div>
+                </Form>
+              </Card.Body>
+            </Card>
+
+            {/* Preview Card */}
+            {formData.event_name && (
+              <Card className="shadow-sm mt-4">
+                <Card.Header className="bg-light">
+                  <h5 className="mb-0">Event Preview</h5>
+                </Card.Header>
                 <Card.Body>
                   <Row>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaUser className="me-2" />Organizer Name</Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder="Enter organizer name"
-                          name="organizer_name"
-                          value={formData.organizer_name}
-                          onChange={handleChange}
-                          required
-                        />
-                      </Form.Group>
+                    <Col md={6}>
+                      <p><strong>Name:</strong> {formData.event_name || 'Not specified'}</p>
+                      <p><strong>Venue:</strong> {formData.venue || 'Not specified'}</p>
                     </Col>
-
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Contact Number</Form.Label>
-                        <Form.Control
-                          type="tel"
-                          placeholder="Enter contact number"
-                          name="organizer_contact"
-                          value={formData.organizer_contact}
-                          onChange={handleChange}
-                          required
-                        />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Email Address</Form.Label>
-                        <Form.Control
-                          type="email"
-                          placeholder="Enter email address"
-                          name="organizer_email"
-                          value={formData.organizer_email}
-                          onChange={handleChange}
-                          required
-                        />
-                      </Form.Group>
+                    <Col md={6}>
+                      <p><strong>Date & Time:</strong> {formData.event_date_time ? 
+                        new Date(formData.event_date_time).toLocaleString() : 'Not specified'}</p>
+                      <p><strong>Description:</strong> {formData.description || 'Not specified'}</p>
                     </Col>
                   </Row>
                 </Card.Body>
               </Card>
-              
-              {/* Event Details */}
-              <Card className="mb-4">
-                <Card.Header as="h5">Event Details</Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Event Type</Form.Label>
-                        <Form.Select
-                          name="event_type"
-                          value={formData.event_type}
-                          onChange={handleChange}
-                          required
-                        >
-                          <option value="">Select event type</option>
-                          <option value="in-person">In-Person</option>
-                          <option value="virtual">Virtual</option>
-                          <option value="hybrid">Hybrid</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Event Status</Form.Label>
-                        <Form.Select
-                          name="event_status"
-                          value={formData.event_status}
-                          onChange={handleChange}
-                          required
-                        >
-                          <option value="upcoming">Upcoming</option>
-                          <option value="ongoing">Ongoing</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaUsers className="me-2" />Max Participants</Form.Label>
-                        <Form.Control
-                          type="number"
-                          placeholder="Enter maximum participants"
-                          name="max_participants"
-                          value={formData.max_participants}
-                          onChange={handleChange}
-                          min="1"
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaMoneyBillWave className="me-2" />Registration Fee</Form.Label>
-                        <Form.Control
-                          type="number"
-                          placeholder="Enter registration fee (0 for free)"
-                          name="registration_fee"
-                          value={formData.registration_fee}
-                          onChange={handleChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </Form.Group>
-                    </Col>
-
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label><FaTag className="me-2" />Tags (comma separated)</Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder="Enter tags (e.g., tech, innovation, networking)"
-                          name="tags"
-                          value={formData.tags}
-                          onChange={handleChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Additional Notes</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      placeholder="Enter any additional notes or special instructions"
-                      name="additional_notes"
-                      value={formData.additional_notes}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Check
-                      type="checkbox"
-                      label="Feature this event"
-                      name="is_featured"
-                      checked={formData.is_featured}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Card.Body>
-              </Card>
-              
-              <div className="d-flex gap-2 mt-3">
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Submitting..." : "Add Event"}
-                </Button>
-                
-                <Button
-                  variant="secondary"
-                  onClick={clearForm}
-                  type="button"
-                >
-                  Clear
-                </Button>
-              </div>
-            </Form>
+            )}
           </Container>
         </div>
       </div>
