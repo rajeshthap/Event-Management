@@ -23,7 +23,7 @@ import { autoTable } from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 const TotalRegistration = () => {
-  const { auth, logout, refreshAccessToken } = useAuth();
+  const { auth, logout, refreshAccessToken, isLoading: authLoading, isAuthenticated } = useAuth();
   const admin_id = auth?.unique_id;
 
   console.log("Admin ID:", admin_id);
@@ -146,19 +146,20 @@ const TotalRegistration = () => {
 
   // Fetch registration entries from API
   const fetchEntries = async () => {
+    // Don't fetch if auth is still loading or user is not authenticated
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
+
     setIsLoading(true);
     setIsFetching(true);
     try {
       const url = `${API_BASE_URL}/api/reg-user/`;
-      let response = await fetch(url, {
+      
+      // Use the authFetch hook which should handle token refresh automatically
+      const response = await authFetch(url, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${auth?.access}`,
-        },
       });
-
-      // If unauthorized, try refreshing token and retry once
-   
 
       if (!response.ok) {
         throw new Error("Failed to fetch registration entries");
@@ -200,19 +201,36 @@ const TotalRegistration = () => {
       setFilteredEntries(processedEntries);
     } catch (error) {
       console.error("Error fetching registration entries:", error);
-      setMessage(error.message || "An error occurred while fetching registration entries");
-      setVariant("danger");
-      setShowAlert(true);
+      
+      // Check if it's an authentication error
+      if (error.message.includes("401") || error.message.includes("unauthorized")) {
+        setMessage("Your session has expired. Please log in again.");
+        setVariant("warning");
+        setShowAlert(true);
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          logout();
+          navigate("/login");
+        }, 3000);
+      } else {
+        setMessage(error.message || "An error occurred while fetching registration entries");
+        setVariant("danger");
+        setShowAlert(true);
+      }
     } finally {
       setIsLoading(false);
       setIsFetching(false);
     }
   };
 
-  // Fetch registration entries on component mount
+  // Fetch registration entries when auth is ready
   useEffect(() => {
-    fetchEntries();
-  }, []);
+    // Only fetch when auth is not loading and user is authenticated
+    if (!authLoading && isAuthenticated) {
+      fetchEntries();
+    }
+  }, [authLoading, isAuthenticated]);
 
   // Filter entries based on search query
   useEffect(() => {
@@ -420,6 +438,38 @@ const TotalRegistration = () => {
       </Card.Body>
     </Card>
   );
+
+  // Show loading spinner while auth is loading
+  if (authLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="main-content-dash d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show message and redirect
+  if (!isAuthenticated) {
+    return (
+      <div className="dashboard-container">
+        <div className="main-content-dash d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+          <div className="text-center">
+            <Alert variant="warning">
+              <Alert.Heading>Authentication Required</Alert.Heading>
+              <p>You need to be logged in to view this page.</p>
+              <Button variant="primary" onClick={() => navigate("/login")}>
+                Go to Login
+              </Button>
+            </Alert>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

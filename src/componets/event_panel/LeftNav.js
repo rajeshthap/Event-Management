@@ -80,16 +80,8 @@ const menuItems = [
           path: "/ManageEvent",
           icon: <FaImage />,
         },
-    {
-      label: "Add About Us",
-      path: "/AddAboutUs",
-      icon: <FaEdit />, // add/edit content
-    },
-    {
-      label: "Manage About Us",
-      path: "/ManageAboutUs",
-      icon: <FaListUl />, // manage/list
-    },
+   
+   
   ],
 },
 
@@ -107,16 +99,8 @@ const menuItems = [
           path: "/ManageHeader",
           icon: <FaImage />,
         },
-    {
-      label: "Add About Us",
-      path: "/AddAboutUs",
-      icon: <FaEdit />, // add/edit content
-    },
-    {
-      label: "Manage About Us",
-      path: "/ManageAboutUs",
-      icon: <FaListUl />, // manage/list
-    },
+   
+   
   ],
 },
 
