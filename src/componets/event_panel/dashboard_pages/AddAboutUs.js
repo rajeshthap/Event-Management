@@ -1,40 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert } from "react-bootstrap";
-import "../../../assets/css/dashboard.css";
+import { Container, Form, Button, Alert, Row, Col, Card, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import LeftNav from "../LeftNav";
 import DashBoardHeader from "../DashBoardHeader";
-import { useAuth } from "../../context/AuthContext";
-import { FaPlus, FaTrash } from "react-icons/fa";
+import LeftNav from "../LeftNav";
 import { useAuthFetch } from "../../context/AuthFetch";
+import { FaPlus, FaTrash } from "react-icons/fa";
 
 const AddAboutUs = () => {
-  const { logout } = useAuth();
-  const authFetch = useAuthFetch();
   const navigate = useNavigate();
+  const authFetch = useAuthFetch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   
-  // Form state for About Us
+  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     image: null,
-    modules: [""] // Initialize with one empty module
+    page: 1,
+    modules: []
   });
   
-  // State for image preview
+  // UI state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
-  
-  // State for description validation error
-  const [descriptionError, setDescriptionError] = useState("");
-  
-  // Submission state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [variant, setVariant] = useState("success"); // 'success' or 'danger'
-  const [showAlert, setShowAlert] = useState(false);
 
   // Check device width
   useEffect(() => {
@@ -49,334 +41,275 @@ const AddAboutUs = () => {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
-  // Cleanup object URL to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
-
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Handle form input changes
+  // Handle input changes
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    
-    if (name === 'image') {
-      // Handle file input for image
-      const file = files[0];
-      setFormData(prev => ({
-        ...prev,
-        image: file
-      }));
-      
-      // Create a preview URL for selected image
-      if (file) {
-        const previewUrl = URL.createObjectURL(file);
-        setImagePreview(previewUrl);
-      } else {
-        setImagePreview(null);
-      }
-    } else if (name.startsWith('module')) {
-      // Handle module inputs
-      const moduleIndex = parseInt(name.split('-')[1]);
-      
-      setFormData(prev => {
-        const newModules = [...prev.modules];
-        newModules[moduleIndex] = value;
-        
-        return {
-          ...prev,
-          modules: newModules
-        };
-      });
-    } else {
-      // Handle text inputs
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-      
-      // Validate description length
-      if (name === 'description') {
-        const wordCount = value.trim().split(/\s+/).length;
-        if (value.trim() === '') {
-          setDescriptionError("Description is required.");
-        } else if (wordCount <= 10) {
-          setDescriptionError(`Description must be more than 10 words. You have entered ${wordCount} words.`);
-        } else {
-          setDescriptionError(""); // Clear error if valid
-        }
-      }
-    }
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
   };
 
-  // Handle module changes
-  const handleModuleChange = (index, value) => {
-    setFormData(prev => {
-      const newModules = [...prev.modules];
-      newModules[index] = value;
+  // Handle image change
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({
+        ...formData,
+        image: file
+      });
       
-      return {
-        ...prev,
-        modules: newModules
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
       };
-    });
+      reader.readAsDataURL(file);
+    }
   };
 
   // Add a new module
   const addModule = () => {
-    setFormData(prev => ({
-      ...prev,
-      modules: [...prev.modules, ""]
-    }));
+    setFormData({
+      ...formData,
+      modules: [...formData.modules, { title: "", description: "" }]
+    });
   };
 
   // Remove a module
   const removeModule = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      modules: prev.modules.filter((_, i) => i !== index)
-    }));
+    const updatedModules = [...formData.modules];
+    updatedModules.splice(index, 1);
+    setFormData({
+      ...formData,
+      modules: updatedModules
+    });
   };
 
-  // Clear form function
-  const clearForm = () => {
+  // Handle module change
+  const handleModuleChange = (index, field, value) => {
+    const updatedModules = [...formData.modules];
+    updatedModules[index][field] = value;
     setFormData({
-      title: "",
-      description: "",
-      image: null,
-      modules: [""]
+      ...formData,
+      modules: updatedModules
     });
-    setImagePreview(null);
-    setMessage("");
-    setShowAlert(false);
-    setDescriptionError("");
   };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check for validation errors before submitting
-    if (descriptionError) {
-      setMessage("Please fix the validation errors before submitting.");
-      setVariant("danger");
-      setShowAlert(true);
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setShowAlert(false);
-    
-    // Create a FormData object to send the file
-    const dataToSend = new FormData();
-    dataToSend.append('title', formData.title);
-    dataToSend.append('description', formData.description);
-    
-    // Add image if it exists
-    if (formData.image) {
-      dataToSend.append('image', formData.image, formData.image.name);
-    }
-    
-    // Add modules as JSON string
-    dataToSend.append('module', JSON.stringify(formData.modules));
+    setLoading(true);
+    setError("");
+    setSuccess("");
     
     try {
-      // Using the provided API endpoint for about us
-      const response = await authFetch('https://mahadevaaya.com/trilokayurveda/trilokabackend/api/aboutus-item/', {
-        method: 'POST',
-        credentials: 'include',
-        body: dataToSend,
-      });
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("page", formData.page);
       
-      // Handle bad API responses
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Server error' }));
-        throw new Error(errorData.message || 'Failed to add about us content');
+      // Add modules as JSON string
+      formDataToSend.append("module", JSON.stringify(formData.modules));
+      
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
       }
       
-      // SUCCESS PATH
-      alert('About Us content added successfully!');
-      setMessage("About Us content added successfully!");
-      setVariant("success");
-      setShowAlert(true);
-      clearForm();
+      const response = await authFetch(
+        "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/aboutus-item/",
+        {
+          method: "POST",
+          body: formDataToSend,
+        }
+      );
       
-      // Hide success alert after 3 seconds
-      setTimeout(() => setShowAlert(false), 3000);
+      const data = await response.json();
       
-    } catch (error) {
-      // FAILURE PATH
-      console.error('Error adding about us content:', error);
-      let errorMessage = "An unexpected error occurred. Please try again.";
-      
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        errorMessage = "Network error: Could not connect to the server. Please check the API endpoint.";
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (data.success) {
+        setSuccess("About Us item added successfully!");
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          image: null,
+          page: 1,
+          modules: []
+        });
+        setImagePreview(null);
+        
+        // Optionally redirect after a delay
+        setTimeout(() => {
+          navigate("/ManageAboutUs"); // Change this to your actual list page
+        }, 2000);
+      } else {
+        setError(data.message || "Failed to add About Us item");
       }
-      
-      setMessage(errorMessage);
-      setVariant("danger");
-      setShowAlert(true);
-      
-      // Hide error alert after 5 seconds
-      setTimeout(() => setShowAlert(false), 5000);
-      
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      console.error("Error:", err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
     <>
-    <div className="dashboard-container">
-      {/* Left Sidebar */}
-      <LeftNav
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        isMobile={isMobile}
-        isTablet={isTablet}
-      />
+      <div className="dashboard-container">
+        {/* Left Sidebar */}
+        <LeftNav
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          isMobile={isMobile}
+          isTablet={isTablet}
+        />
 
-      {/* Main Content */}
-      <div className="main-content">
-        <DashBoardHeader toggleSidebar={toggleSidebar} />
+        {/* Main Content */}
+        <div className="main-content-dash">
+          <DashBoardHeader toggleSidebar={toggleSidebar} />
 
-        <Container fluid className="dashboard-body dashboard-main-container">
-          <h1 className="page-title">Add About Us Content</h1>
-          
-          {/* Alert for success/error messages */}
-          {showAlert && (
-            <Alert variant={variant} className="mb-4" onClose={() => setShowAlert(false)} dismissible>
-              {message}
-            </Alert>
-          )}
-          
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Title</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
+          <Container fluid className="dashboard-body dashboard-main-container">
+            <h1 className="page-title">Add About Us Item</h1>
             
-            <Form.Group className="mb-3">
-              <Form.Label>Description (must be more than 10 words)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                placeholder="Enter description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                required
-                isInvalid={!!descriptionError}
-              />
-              <Form.Control.Feedback type="invalid">
-                {descriptionError}
-              </Form.Control.Feedback>
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-              <Form.Label>Image</Form.Label>
-              <Form.Control
-                type="file"
-                name="image"
-                onChange={handleChange}
-                accept="image/*"
-              />
-              {imagePreview && (
-                <div className="mt-3">
-                  <img src={imagePreview} alt="Image Preview"
-                   className="img-wrapper"
-               />
-                </div>
-              )}
-            </Form.Group>
-            
-            {/* Modules Section */}
-            <Form.Group className="mb-3">
-              <Form.Label>Modules</Form.Label>
-              <div className="modules-container">
-                {formData.modules.map((module, index) => (
-                  <div key={index} className="module-item mb-3 p-3 border rounded">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <h5>Module {index + 1}</h5>
-                      {formData.modules.length > 1 && (
-                        <Button 
-                          variant="outline-danger" 
-                          size="sm"
-                          onClick={() => removeModule(index)}
-                        >
-                          <FaTrash /> Remove
-                        </Button>
-                      )}
-                    </div>
+            <Row className="justify-content-center">
+              <Col md={12} lg={12}>
+                <Card className="shadow-sm">
+                  <Card.Body className="p-4">
+                    {error && <Alert variant="danger">{error}</Alert>}
+                    {success && <Alert variant="success">{success}</Alert>}
                     
-                 <Form.Group className="mb-2">
-  <Form.Label>Module Name</Form.Label>
-  <Form.Control
-    type="text"
-    placeholder={`Enter module ${index + 1} name`}
-    value={module.name}
-    onChange={(e) => handleModuleChange(index, 'name', e.target.value)}
-    required
-  />
-</Form.Group>
-
-<Form.Group>
-  <Form.Label>Module Description</Form.Label>
-  <Form.Control
-    as="textarea"
-    rows={3}
-    placeholder={`Enter module ${index + 1} description`}
-    value={module.description}
-    onChange={(e) => handleModuleChange(index, 'description', e.target.value)}
-    required
-  />
-</Form.Group>
-                  </div>
-                ))}
-                
-                <Button 
-                  variant="outline-primary" 
-                  onClick={addModule}
-                  className="mt-2"
-                >
-                  <FaPlus /> Add Another Module
-                </Button>
-              </div>
-            </Form.Group>
-            
-            <Button 
-              variant="primary" 
-              type="submit" 
-              disabled={isSubmitting}
-              className="me-2"
-            >
-              {isSubmitting ? 'Submitting...' : 'Add About Us Content'}
-            </Button>
-            
-            <Button 
-              variant="secondary" 
-              onClick={clearForm}
-              type="button"
-            >
-              Clear
-            </Button>
-          </Form>
-        </Container>
+                    <Form onSubmit={handleSubmit}>
+                      <Form.Group className="mb-3" controlId="title">
+                        <Form.Label>Title *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          placeholder="Enter title"
+                          name="title"
+                          value={formData.title}
+                          onChange={handleChange}
+                          required
+                        />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-3" controlId="description">
+                        <Form.Label>Description</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={4}
+                          placeholder="Enter description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-3" controlId="page">
+                        <Form.Label>Page</Form.Label>
+                        <Form.Control
+                          type="number"
+                          placeholder="Enter page number"
+                          name="page"
+                          value={formData.page}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-4" controlId="image">
+                        <Form.Label>Image</Form.Label>
+                        <Form.Control
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                        />
+                        {imagePreview && (
+                          <div className="mt-3">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="img-fluid rounded"
+                              style={{ maxHeight: "200px" }}
+                            />
+                          </div>
+                        )}
+                      </Form.Group>
+                      
+                      <div className="mb-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <Form.Label className="mb-0">Modules</Form.Label>
+                          <Button variant="outline-primary" size="sm" onClick={addModule}>
+                            <FaPlus /> Add Module
+                          </Button>
+                        </div>
+                        
+                        {formData.modules.map((module, index) => (
+                          <Card key={index} className="mb-3">
+                            <Card.Header className="d-flex justify-content-between align-items-center">
+                              <Badge bg="primary">Module {index + 1}</Badge>
+                              <Button 
+                                variant="outline-danger" 
+                                size="sm" 
+                                onClick={() => removeModule(index)}
+                              >
+                                <FaTrash />
+                              </Button>
+                            </Card.Header>
+                            <Card.Body>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Module Title</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  placeholder="Enter module title"
+                                  value={module.title}
+                                  onChange={(e) => handleModuleChange(index, 'title', e.target.value)}
+                                />
+                              </Form.Group>
+                              <Form.Group>
+                                <Form.Label>Module Description</Form.Label>
+                                <Form.Control
+                                  as="textarea"
+                                  rows={3}
+                                  placeholder="Enter module description"
+                                  value={module.description}
+                                  onChange={(e) => handleModuleChange(index, 'description', e.target.value)}
+                                />
+                              </Form.Group>
+                            </Card.Body>
+                          </Card>
+                        ))}
+                        
+                        {formData.modules.length === 0 && (
+                          <Alert variant="info">
+                            No modules added yet. Click "Add Module" to add one.
+                          </Alert>
+                        )}
+                      </div>
+                      
+                      <div className="d-grid gap-2 d-flex ">
+                        <Button
+                          variant="primary"
+                          type="submit"
+                          disabled={loading}
+                          className="btn-primary"
+                        >
+                          {loading ? "Submitting..." : "Add About Us Item"}
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() => navigate("/aboutus-list")} // Change this to your actual list page
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </Form>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </Container>
+        </div>
       </div>
-    </div>
     </>
   );
 };

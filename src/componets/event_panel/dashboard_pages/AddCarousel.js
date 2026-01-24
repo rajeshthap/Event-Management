@@ -1,38 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert } from "react-bootstrap";
-import "../../../assets/css/dashboard.css";
+import { Container, Form, Button, Alert, Row, Col, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useAuthFetch } from "../../context/AuthFetch";
-import LeftNav from "../LeftNav";
 import DashBoardHeader from "../DashBoardHeader";
+import LeftNav from "../LeftNav";
+import { useAuthFetch } from "../../context/AuthFetch";
 
 const AddCarousel = () => {
-  const { auth, logout, refreshAccessToken } = useAuth();
-  const admin_id = auth?.unique_id;
-  
-  console.log("Admin ID:", admin_id);
-  const authFetch = useAuthFetch();
   const navigate = useNavigate();
+  const authFetch = useAuthFetch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   
-  // Form state for Carousel
+  // Form state
   const [formData, setFormData] = useState({
     title: "",
-    image: null,
-    description: ""
+    sub_title: "",
+    description: "",
+    image: null
   });
   
-  // State for image preview
+  // UI state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
-  
-  // Submission state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [variant, setVariant] = useState("success"); // 'success' or 'danger'
-  const [showAlert, setShowAlert] = useState(false);
 
   // Check device width
   useEffect(() => {
@@ -47,151 +39,84 @@ const AddCarousel = () => {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
-  // Cleanup object URLs to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
-
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Handle form input changes
+  // Handle input changes
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    
-    if (name === "image") {
-      // Handle file input for image
-      const file = files[0];
-      setFormData(prev => ({
-        ...prev,
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  // Handle image change
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({
+        ...formData,
         image: file
-      }));
+      });
       
-      // Create a preview URL for selected image
-      if (file) {
-        const previewUrl = URL.createObjectURL(file);
-        setImagePreview(previewUrl);
-      } else {
-        setImagePreview(null);
-      }
-    } else {
-      // Handle text inputs
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  // Clear form function
-  const clearForm = () => {
-    setFormData({
-      title: "",
-      image: null,
-      description: ""
-    });
-    setImagePreview(null);
-    setMessage("");
-    setShowAlert(false);
-  };
-
-  // Handle form submission (POST request)
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setShowAlert(false);
+    setLoading(true);
+    setError("");
+    setSuccess("");
     
     try {
-      // Create a FormData object to send the files
-      const dataToSend = new FormData();
-      dataToSend.append('title', formData.title);
-      
-      // Add image if it exists
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("sub_title", formData.sub_title);
+      formDataToSend.append("description", formData.description);
       if (formData.image) {
-        dataToSend.append('image', formData.image, formData.image.name);
+        formDataToSend.append("image", formData.image);
       }
       
-      // Add description
-      dataToSend.append('description', formData.description);
-      
-      console.log("Submitting data:");
-      for (let pair of dataToSend.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
-      
-      // Use fetch directly for FormData so the browser sets Content-Type automatically
-      const url = "https://mahadevaaya.com/trilokayurveda/trilokabackend/api/carousel-items/";
-      let response = await fetch(url, {
-        method: "POST",
-        body: dataToSend,
-        headers: {
-          Authorization: `Bearer ${auth?.access}`,
-        },
-      });
-      
-      // If unauthorized, try refreshing token and retry once
-      if (response.status === 401) {
-        const newAccess = await refreshAccessToken();
-        if (!newAccess) throw new Error("Session expired");
-        response = await fetch(url, {
+      const response = await authFetch(
+        "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/",
+        {
           method: "POST",
-          body: dataToSend,
-          headers: {
-            Authorization: `Bearer ${newAccess}`,
-          },
-        });
-      }
-      
-      console.log("POST Response status:", response.status);
-      
-      // Handle bad API responses
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData = null;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          /* not JSON */
+          body: formDataToSend,
         }
-        console.error("Server error response:", errorData || errorText);
-        throw new Error((errorData && errorData.message) || "Failed to add carousel item");
+      );
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess("Carousel item added successfully!");
+        // Reset form
+        setFormData({
+          title: "",
+          sub_title: "",
+          description: "",
+          image: null
+        });
+        setImagePreview(null);
+        
+        // Optionally redirect after a delay
+        setTimeout(() => {
+          navigate("/ManageCarousel"); // Change this to your actual list page
+        }, 2000);
+      } else {
+        setError(data.message || "Failed to add carousel item");
       }
-      
-      // SUCCESS PATH
-      const result = await response.json();
-      console.log("POST Success response:", result);
-      
-      setMessage("Carousel item added successfully!");
-      setVariant("success");
-      setShowAlert(true);
-      clearForm();
-      
-      // Hide success alert after 3 seconds
-      setTimeout(() => setShowAlert(false), 3000);
-      
-    } catch (error) {
-      // FAILURE PATH
-      console.error("Error adding carousel item:", error);
-      let errorMessage = "An unexpected error occurred. Please try again.";
-      
-      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        errorMessage = "Network error: Could not connect to the server. Please check the API endpoint.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setMessage(errorMessage);
-      setVariant("danger");
-      setShowAlert(true);
-      
-      // Hide error alert after 5 seconds
-      setTimeout(() => setShowAlert(false), 5000);
-      
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      console.error("Error:", err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -207,95 +132,95 @@ const AddCarousel = () => {
         />
 
         {/* Main Content */}
-        <div className="main-content">
+        <div className="main-content-dash">
           <DashBoardHeader toggleSidebar={toggleSidebar} />
 
           <Container fluid className="dashboard-body dashboard-main-container">
-            <h1 className="page-title">Add Carousel</h1>
+            <h1 className="page-title">Add Carousel Item</h1>
             
-            {/* Alert for success/error messages */}
-            {showAlert && (
-              <Alert variant={variant} className="mb-4" onClose={() => setShowAlert(false)} dismissible>
-                {message}
-              </Alert>
-            )}
-            
-            <Form onSubmit={handleSubmit}>
-              <Row>
-                <Col md={12}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Title</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Enter title"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Row>
-                <Col md={12}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Image</Form.Label>
-                    <Form.Control
-                      type="file"
-                      name="image"
-                      onChange={handleChange}
-                      accept="image/*"
-                    />
-                    {imagePreview && (
-                      <div className="mt-3">
-                        <p>Image Preview:</p>
-                        <img
-                          src={imagePreview}
-                          alt="Image Preview"
-                         className="img-current"
+            <Row className="justify-content-center">
+              <Col md={12} lg={12}>
+                <Card className="shadow-sm">
+                  <Card.Body className="p-4">
+                    {error && <Alert variant="danger">{error}</Alert>}
+                    {success && <Alert variant="success">{success}</Alert>}
+                    
+                    <Form onSubmit={handleSubmit}>
+                      <Form.Group className="mb-3" controlId="title">
+                        <Form.Label>Title *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          placeholder="Enter title"
+                          name="title"
+                          value={formData.title}
+                          onChange={handleChange}
+                          required
                         />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-3" controlId="sub_title">
+                        <Form.Label>Subtitle</Form.Label>
+                        <Form.Control
+                          type="text"
+                          placeholder="Enter subtitle"
+                          name="sub_title"
+                          value={formData.sub_title}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-3" controlId="description">
+                        <Form.Label>Description</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={4}
+                          placeholder="Enter description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-4" controlId="image">
+                        <Form.Label>Image</Form.Label>
+                        <Form.Control
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                        />
+                        {imagePreview && (
+                          <div className="mt-3">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="img-fluid rounded"
+                              style={{ maxHeight: "200px" }}
+                            />
+                          </div>
+                        )}
+                      </Form.Group>
+                      
+                      <div className="d-grid gap-2 d-flex ">
+                        <Button
+                          variant="primary"
+                          type="submit"
+                          disabled={loading}
+                          className="btn-primary"
+                        >
+                          {loading ? "Submitting..." : "Add Carousel Item"}
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() => navigate("/carousel-list")} // Change this to your actual list page
+                        >
+                          Cancel
+                        </Button>
                       </div>
-                    )}
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Row>
-                <Col md={12}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={4}
-                      placeholder="Enter description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <div className="d-flex gap-2 mt-3">
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Submitting..." : "Add Carousel Item"}
-                </Button>
-                
-                <Button
-                  variant="secondary"
-                  onClick={clearForm}
-                  type="button"
-                >
-                  Clear
-                </Button>
-              </div>
-            </Form>
+                    </Form>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
           </Container>
         </div>
       </div>

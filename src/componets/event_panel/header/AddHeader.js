@@ -172,11 +172,14 @@ const AddHeader = () => {
         data.append('logo', formData.logo);
       }
       
-      // Filter out empty profile links and append them
+      // Filter out empty profile links and append as JSON string
       const validLinks = formData.profile_link.filter(link => link.trim() !== "");
-      validLinks.forEach((link, index) => {
-        data.append(`profile_link[${index}]`, link);
-      });
+      data.append('profile_link', JSON.stringify(validLinks));
+      
+      console.log("FormData for submission:");
+      for (let pair of data.entries()) {
+        console.log(pair[0] + ": " + pair[1]);
+      }
       
       // API call using authFetch
       const response = await authFetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/company-detail-item/', {
@@ -185,6 +188,8 @@ const AddHeader = () => {
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         throw new Error('Failed to add company details');
       }
       

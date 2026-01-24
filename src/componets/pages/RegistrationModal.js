@@ -1,8 +1,8 @@
-// src/components/RegistrationModal.js
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Button, Alert, Dropdown, Row, Col, Image, ProgressBar } from 'react-bootstrap';
+import { Modal, Form, Button, Alert, Dropdown, Row, Col, Image, ProgressBar, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import '../../assets/css/registration.css';
+import RegistrationPreview from './RegistrationPreview';
 
 const RegistrationModal = ({ show, handleClose }) => {
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ const RegistrationModal = ({ show, handleClose }) => {
   const [registeredEmail, setRegisteredEmail] = useState('');
   
   // UI state
-  const [currentStep, setCurrentStep] = useState('registration'); // 'registration' or 'verification'
+  const [currentStep, setCurrentStep] = useState('registration'); // 'registration', 'preview', or 'verification'
   
   // Validation state
   const [errors, setErrors] = useState({});
@@ -57,6 +57,9 @@ const RegistrationModal = ({ show, handleClose }) => {
   const [apiResponse, setApiResponse] = useState(null); // To store detailed API response for debugging
   const [countdown, setCountdown] = useState(0); // For resend code countdown
   const [alreadyRegisteredMessage, setAlreadyRegisteredMessage] = useState(''); // New state for already registered message
+  const [phoneAlreadyRegisteredMessage, setPhoneAlreadyRegisteredMessage] = useState(''); // New state for phone already registered message
+  const [userTypeError, setUserTypeError] = useState(''); // New state for user type error
+  const [certificateUrls, setCertificateUrls] = useState({}); // To store URLs of uploaded certificates
   
   // Ref for file inputs
   const fileInputRef = useRef(null);
@@ -85,12 +88,7 @@ const RegistrationModal = ({ show, handleClose }) => {
     'Acting',
     'Singing',
     'Music',
-    'scripting Writing',
-    'Photography',
-    'Python',
-    'Django',
-    'React',
-    'Node.js'
+    'script Writing',
   ];
 
   // Form validation for registration
@@ -100,11 +98,6 @@ const RegistrationModal = ({ show, handleClose }) => {
     // Team name validation (only for organization)
     if (formData.user_type === 'organization' && !formData.team_name.trim()) {
       newErrors.team_name = 'Team name is required for organization registration';
-    }
-
-    // Profile image validation
-    if (!formData.profile_image) {
-      newErrors.profile_image = 'Profile image is required';
     }
 
     // Full name validation
@@ -297,6 +290,16 @@ const RegistrationModal = ({ show, handleClose }) => {
         [name]: ''
       }));
     }
+    
+    // Clear phone already registered message when phone is changed
+    if (name === 'phone' && phoneAlreadyRegisteredMessage) {
+      setPhoneAlreadyRegisteredMessage('');
+    }
+    
+    // Clear user type error when user type is changed
+    if (name === 'user_type' && userTypeError) {
+      setUserTypeError('');
+    }
   };
 
   // Handle user type change
@@ -323,6 +326,9 @@ const RegistrationModal = ({ show, handleClose }) => {
         date_of_birth: ''
       }));
     }
+    
+    // Clear user type error
+    setUserTypeError('');
   };
 
   // Handle verification code change
@@ -429,6 +435,16 @@ const RegistrationModal = ({ show, handleClose }) => {
         [certificateType]: file
       }));
       
+      // Create URL for the certificate file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCertificateUrls(prev => ({
+          ...prev,
+          [certificateType]: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+      
       // Clear error if it exists
       if (errors[certificateType]) {
         setErrors(prev => ({
@@ -445,6 +461,12 @@ const RegistrationModal = ({ show, handleClose }) => {
       ...prev,
       [certificateType]: null
     }));
+    
+    setCertificateUrls(prev => {
+      const newUrls = { ...prev };
+      delete newUrls[certificateType];
+      return newUrls;
+    });
     
     // Reset file input
     if (certificateFileRefs[certificateType].current) {
@@ -619,228 +641,276 @@ const RegistrationModal = ({ show, handleClose }) => {
     }
   };
 
+  // Handle preview button click - validate form and show preview
+  const handlePreviewClick = (e) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      setCurrentStep('preview');
+    }
+  };
+
   // Handle registration form submission
   const handleRegistrationSubmit = async (e) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      setIsSubmitting(true);
-      setApiError('');
-      setApiResponse(null);
-      setAlreadyRegisteredMessage(''); // Clear any previous already registered message
+    setIsSubmitting(true);
+    setApiError('');
+    setApiResponse(null);
+    setAlreadyRegisteredMessage(''); // Clear any previous already registered message
+    setPhoneAlreadyRegisteredMessage(''); // Clear any previous phone already registered message
+    setUserTypeError(''); // Clear any previous user type error
+    
+    try {
+      // Create FormData for file upload
+      const apiFormData = new FormData();
       
-      try {
-        // Create FormData for file upload
-        const apiFormData = new FormData();
-        
-        // Add user type
-        apiFormData.append('user_type', formData.user_type);
-        
-        // Add team name if organization
-        if (formData.user_type === 'organization') {
-          apiFormData.append('team_name', formData.team_name);
-        }
-        
-        // Add all form fields
-        apiFormData.append('full_name', formData.full_name);
-        apiFormData.append('gender', formData.gender);
-        
-        if (formData.user_type === 'individual') {
-          apiFormData.append('date_of_birth', formData.date_of_birth);
-        }
-        
-        apiFormData.append('email', formData.email);
-        apiFormData.append('password', formData.password);
-        apiFormData.append('country', formData.country);
-        apiFormData.append('state', formData.state);
-        apiFormData.append('city', formData.city);
-        apiFormData.append('phone', formData.phone);
-        apiFormData.append('address', formData.address);
-        apiFormData.append('introduction', formData.introduction);
-        
-        // Add profile image
-        if (formData.profile_image) {
-          apiFormData.append('profile_image', formData.profile_image);
-        }
-        
-        // Add talent scope as JSON string
-        apiFormData.append('talent_scope', JSON.stringify(formData.talent_scope));
-        
-        // Add social media links as JSON string
-        const validSocialMediaLinks = formData.social_media_links.filter(link => link.trim() !== '');
-        apiFormData.append('social_media_link', JSON.stringify(validSocialMediaLinks));
-        
-        // Add additional links as JSON string
-        const validAdditionalLinks = formData.additional_links.filter(link => link.trim() !== '');
-        if (validAdditionalLinks.length > 0) {
-          apiFormData.append('additional_link', JSON.stringify(validAdditionalLinks));
-        }
-        
-        // Add portfolio links as JSON string
-        const validPortfolioLinks = formData.portfolio_links.filter(link => link.trim() !== '');
-        if (validPortfolioLinks.length > 0) {
-          apiFormData.append('portfolio_link', JSON.stringify(validPortfolioLinks));
-        }
-        
-        // Add certificate files
-        certificateOptions.forEach(option => {
-          if (formData[option.id]) {
-            apiFormData.append(option.id, formData[option.id]);
-          }
-        });
-
-        // Log the form data for debugging
-        console.log('Submitting registration data:');
-        for (let [key, value] of apiFormData.entries()) {
-          console.log(`${key}:`, value);
-        }
-
-        // API call with timeout and proper error handling
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-        
-        const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/reg-user/', {
-          method: 'POST',
-          body: apiFormData,
-          headers: {
-            'Accept': 'application/json'
-          },
-          signal: controller.signal,
-          mode: 'cors' // Explicitly set CORS mode
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Try to parse the response
-        let data;
-        try {
-          data = await response.json();
-        } catch (e) {
-          // If we can't parse JSON, use status text
-          if (!response.ok) {
-            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-          }
-          // If response is OK but we can't parse JSON, treat it as success
-          data = { success: true };
-        }
-        
-        console.log('API Response:', data); // Log the response for debugging
-        setApiResponse(data); // Store response for debugging
-        
-        // Check if response is OK
-        if (!response.ok) {
-          // Handle different error formats
-          if (data.message) {
-            // Check if this is the "Email not verified" case
-            if (data.message === 'Email not verified. Verification code resent.') {
-              // Set the already registered message
-              setAlreadyRegisteredMessage(data.message);
-              // Set the registered email for verification
-              setRegisteredEmail(formData.email);
-              // Move to verification step
-              setCurrentStep('verification');
-              setIsSubmitting(false);
-              return;
-            }
-            // Check if this is the "Email already registered and verified" case
-            else if (data.message === 'Email already registered and verified.') {
-              // Set the already registered message
-              setAlreadyRegisteredMessage(data.message);
-              setIsSubmitting(false);
-              return;
-            }
-            throw new Error(data.message);
-          } else if (data.error) {
-            throw new Error(data.error);
-          } else if (data.errors) {
-            // If there are field-specific errors, extract them
-            const errorMessages = Object.values(data.errors).flat();
-            throw new Error(errorMessages.join(', '));
-          } else if (data.detail) {
-            throw new Error(data.detail);
-          } else if (data.email) {
-            // Check if this is the "Email already registered and verified" case
-            if (data.email === 'Email already registered and verified.') {
-              // Set the already registered message
-              setAlreadyRegisteredMessage(data.email);
-              setIsSubmitting(false);
-              return;
-            }
-            throw new Error(data.email);
-          } else {
-            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-          }
-        }
-        
-        // On success, move to verification step
-        setRegisteredEmail(formData.email);
-        setSubmitSuccess(true);
-        setIsSubmitting(false);
-        
-        // Reset form after successful submission
-        setTimeout(() => {
-          setFormData({
-            user_type: 'individual',
-            team_name: '',
-            profile_image: null,
-            profile_image_preview: '',
-            full_name: '',
-            gender: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-            date_of_birth: '',
-            country: '',
-            state: '',
-            city: '',
-            phone: '',
-            address: '',
-            introduction: '',
-            talent_scope: [],
-            social_media_links: [''],
-            additional_links: [''],
-            portfolio_links: [''],
-            selected_certificates: [],
-            national_level_certificate: null,
-            internation_level_certificate_award: null,
-            state_level_certificate: null,
-            district_level_certificate: null,
-            college_level_certificate: null,
-            other_certificate: null,
-            agreeTerms: false
-          });
-          
-          // Reset file inputs
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-          
-          Object.values(certificateFileRefs).forEach(ref => {
-            if (ref.current) {
-              ref.current.value = '';
-            }
-          });
-          
-          setSubmitSuccess(false);
-          setCurrentStep('verification');
-        }, 2000);
-        
-      } catch (error) {
-        console.error('Registration error:', error);
-        
-        // Handle different types of errors
-        if (error.name === 'AbortError') {
-          setApiError('Request timed out. Please check your connection and try again.');
-        } else if (error.message.includes('Failed to fetch')) {
-          setApiError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-        } else if (error.message.includes('CORS')) {
-          setApiError('Network error: CORS policy issue. Please contact support.');
-        } else {
-          setApiError(`Error: ${error.message}`);
-        }
-        
-        setIsSubmitting(false);
+      // Add user type - ensure it's a clean string without quotes
+      // Make sure we're sending exactly 'individual' or 'organization' without any extra characters
+      apiFormData.append('user_type', formData.user_type);
+      
+      // Add team name if organization
+      if (formData.user_type === 'organization') {
+        apiFormData.append('team_name', formData.team_name);
       }
+      
+      // Add all form fields
+      apiFormData.append('full_name', formData.full_name);
+      apiFormData.append('gender', formData.gender);
+      
+      if (formData.user_type === 'individual') {
+        apiFormData.append('date_of_birth', formData.date_of_birth);
+      }
+      
+      apiFormData.append('email', formData.email);
+      apiFormData.append('password', formData.password);
+      apiFormData.append('country', formData.country);
+      apiFormData.append('state', formData.state);
+      apiFormData.append('city', formData.city);
+      apiFormData.append('phone', formData.phone);
+      apiFormData.append('address', formData.address);
+      apiFormData.append('introduction', formData.introduction);
+      
+      // Add profile image
+      if (formData.profile_image) {
+        apiFormData.append('profile_image', formData.profile_image);
+      }
+      
+      // Add talent scope as JSON string
+      apiFormData.append('talent_scope', JSON.stringify(formData.talent_scope));
+      
+      // Add social media links as JSON string
+      const validSocialMediaLinks = formData.social_media_links.filter(link => link.trim() !== '');
+      apiFormData.append('social_media_link', JSON.stringify(validSocialMediaLinks));
+      
+      // Add additional links as JSON string
+      const validAdditionalLinks = formData.additional_links.filter(link => link.trim() !== '');
+      if (validAdditionalLinks.length > 0) {
+        apiFormData.append('additional_link', JSON.stringify(validAdditionalLinks));
+      }
+      
+      // Add portfolio links as JSON string
+      const validPortfolioLinks = formData.portfolio_links.filter(link => link.trim() !== '');
+      if (validPortfolioLinks.length > 0) {
+        apiFormData.append('portfolio_link', JSON.stringify(validPortfolioLinks));
+      }
+      
+      // Add certificate files
+      certificateOptions.forEach(option => {
+        if (formData[option.id]) {
+          apiFormData.append(option.id, formData[option.id]);
+        }
+      });
+
+      // Log the form data for debugging
+      console.log('Submitting registration data:');
+      for (let [key, value] of apiFormData.entries()) {
+        console.log(`${key}:`, value);
+      }
+
+      // API call with timeout and proper error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/reg-user/', {
+        method: 'POST',
+        body: apiFormData,
+        headers: {
+          'Accept': 'application/json'
+        },
+        signal: controller.signal,
+        mode: 'cors' // Explicitly set CORS mode
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Try to parse the response
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // If we can't parse JSON, use status text
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        // If response is OK but we can't parse JSON, treat it as success
+        data = { success: true };
+      }
+      
+      console.log('API Response:', data); // Log the response for debugging
+      setApiResponse(data); // Store response for debugging
+      
+      // Check if response is OK
+      if (!response.ok) {
+        // Handle different error formats
+        if (data.message) {
+          // Check if this is the "Email not verified" case
+          if (data.message === 'Email not verified. Verification code resent.') {
+            // Set the already registered message
+            setAlreadyRegisteredMessage(data.message);
+            // Set the registered email for verification
+            setRegisteredEmail(formData.email);
+            // Move to verification step
+            setCurrentStep('verification');
+            setIsSubmitting(false);
+            return;
+          }
+          // Check if this is the "Email already registered and verified" case
+          else if (data.message === 'Email already registered and verified.') {
+            // Set the already registered message
+            setAlreadyRegisteredMessage(data.message);
+            setIsSubmitting(false);
+            return;
+          }
+          // Check if this is the "Phone number already in use" case
+          else if (data.message === 'Phone number already in use.') {
+            // Set the phone error
+            setErrors(prev => ({ ...prev, phone: data.message }));
+            setPhoneAlreadyRegisteredMessage(data.message);
+            setIsSubmitting(false);
+            return;
+          }
+          throw new Error(data.message);
+        } else if (data.error) {
+          throw new Error(data.error);
+        } else if (data.errors) {
+          // If there are field-specific errors, extract them
+          const errorMessages = Object.values(data.errors).flat();
+          
+          // Check for user_type error specifically
+          if (data.errors.user_type) {
+            const userTypeErrorMsg = Array.isArray(data.errors.user_type) 
+              ? data.errors.user_type[0] 
+              : data.errors.user_type;
+            setUserTypeError(userTypeErrorMsg);
+          }
+          
+          throw new Error(errorMessages.join(', '));
+        } else if (data.detail) {
+          throw new Error(data.detail);
+        } else if (data.email) {
+          // Check if this is the "Email already registered and verified" case
+          if (data.email === 'Email already registered and verified.') {
+            // Set the already registered message
+            setAlreadyRegisteredMessage(data.email);
+            setIsSubmitting(false);
+            return;
+          }
+          throw new Error(data.email);
+        } else if (data.phone) {
+          // Check if this is the "Phone number already in use" case
+          if (data.phone === 'Phone number already in use.') {
+            // Set the phone error
+            setErrors(prev => ({ ...prev, phone: data.phone }));
+            setPhoneAlreadyRegisteredMessage(data.phone);
+            setIsSubmitting(false);
+            return;
+          }
+          throw new Error(data.phone);
+        } else if (data.user_type) {
+          // Handle user_type error
+          const userTypeErrorMsg = Array.isArray(data.user_type) 
+            ? data.user_type[0] 
+            : data.user_type;
+          setUserTypeError(userTypeErrorMsg);
+          setIsSubmitting(false);
+          return;
+        } else if (data.non_field_errors) {
+          // Handle non-field errors
+          throw new Error(data.non_field_errors.join(', '));
+        } else {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+      }
+      
+      // On success, move to verification step
+      setRegisteredEmail(formData.email);
+      setSubmitSuccess(true);
+      setIsSubmitting(false);
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        setFormData({
+          user_type: 'individual',
+          team_name: '',
+          profile_image: null,
+          profile_image_preview: '',
+          full_name: '',
+          gender: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          date_of_birth: '',
+          country: '',
+          state: '',
+          city: '',
+          phone: '',
+          address: '',
+          introduction: '',
+          talent_scope: [],
+          social_media_links: [''],
+          additional_links: [''],
+          portfolio_links: [''],
+          selected_certificates: [],
+          national_level_certificate: null,
+          internation_level_certificate_award: null,
+          state_level_certificate: null,
+          district_level_certificate: null,
+          college_level_certificate: null,
+          other_certificate: null,
+          agreeTerms: false
+        });
+        
+        // Reset file inputs
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        
+        Object.values(certificateFileRefs).forEach(ref => {
+          if (ref.current) {
+            ref.current.value = '';
+          }
+        });
+        
+        setSubmitSuccess(false);
+        setCurrentStep('verification');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      // Handle different types of errors
+      if (error.name === 'AbortError') {
+        setApiError('Request timed out. Please check your connection and try again.');
+      } else if (error.message.includes('Failed to fetch')) {
+        setApiError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (error.message.includes('CORS')) {
+        setApiError('Network error: CORS policy issue. Please contact support.');
+      } else {
+        setApiError(`Error: ${error.message}`);
+      }
+      
+      setIsSubmitting(false);
     }
   };
 
@@ -907,11 +977,11 @@ const RegistrationModal = ({ show, handleClose }) => {
         const data = await response.json();
         console.log('Verification API Response:', data); // Log the response for debugging
         
-        // On success
+        // On success, close modal and navigate to login
         setVerificationSuccess(true);
         setIsSubmitting(false);
         
-        // Navigate to login page after successful verification
+        // Close modal and navigate to login after successful verification
         setTimeout(() => {
           handleClose();
           navigate('/login');
@@ -1032,6 +1102,13 @@ const RegistrationModal = ({ show, handleClose }) => {
     }
   };
 
+  // Open certificate in new tab
+  const openCertificateInNewTab = (certificateId) => {
+    if (certificateUrls[certificateId]) {
+      window.open(certificateUrls[certificateId], '_blank');
+    }
+  };
+
   // Reset form when modal is closed
   useEffect(() => {
     if (!show) {
@@ -1045,7 +1122,10 @@ const RegistrationModal = ({ show, handleClose }) => {
       setResendSuccess(false);
       setApiResponse(null);
       setCountdown(0);
-      setAlreadyRegisteredMessage(''); // Clear already registered message
+      setAlreadyRegisteredMessage('');
+      setPhoneAlreadyRegisteredMessage('');
+      setUserTypeError('');
+      setCertificateUrls({});
     }
   }, [show]);
 
@@ -1064,10 +1144,12 @@ const RegistrationModal = ({ show, handleClose }) => {
   };
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg" centered className="registration-modal">
+    <Modal show={show} onHide={handleClose}  centered className="registration-modal">
       <Modal.Header closeButton className="registration-modal-header">
         <Modal.Title className="registration-modal-title">
-          {currentStep === 'registration' ? 'User Registration' : 'Email Verification'}
+          {currentStep === 'registration' ? 'User Registration' : 
+           currentStep === 'preview' ? 'Registration Preview' :
+           'Email Verification'}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body className="registration-modal-body">
@@ -1083,141 +1165,130 @@ const RegistrationModal = ({ show, handleClose }) => {
               <ProgressBar animated now={100} className="mt-3" />
             </div>
           ) : (
-            <Form onSubmit={handleRegistrationSubmit}>
+            <Form onSubmit={handlePreviewClick}>
               {apiError && <Alert variant="danger">{apiError}</Alert>}
               
-              {/* Already registered message */}
-              {alreadyRegisteredMessage && (
-                <Alert variant={alreadyRegisteredMessage.includes('not verified') ? 'warning' : 'info'}>
-                  {alreadyRegisteredMessage}
-                  {alreadyRegisteredMessage.includes('not verified') && (
-                    <div className="mt-2">
-                      <Button 
-                        variant="primary" 
-                        size="sm" 
-                        onClick={() => setCurrentStep('verification')}
-                      >
-                        Verify Email Now
-                      </Button>
-                    </div>
-                  )}
-                </Alert>
-              )}
-              
-              {/* Debug information - remove in production */}
-              {process.env.NODE_ENV === 'development' && apiResponse && (
-                <Alert variant="info">
-                  <strong>Debug Info:</strong>
-                  <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
-                </Alert>
-              )}
-              
-              {/* User Type Selection */}
-              <Form.Group className="mb-4">
-                <Form.Label className="form-label-custom">Registration Type *</Form.Label>
-                <div className="d-flex">
-                  <Form.Check
-                    type="radio"
-                    id="individual-type"
-                    name="user_type"
-                    label="Individual"
-                    checked={formData.user_type === 'individual'}
-                    onChange={() => handleUserTypeChange('individual')}
-                    className="me-4 user-type-option"
-                  />
-                  <Form.Check
-                    type="radio"
-                    id="organization-type"
-                    name="user_type"
-                    label="Organization"
-                    checked={formData.user_type === 'organization'}
-                    onChange={() => handleUserTypeChange('organization')}
-                    className="user-type-option"
-                  />
-                     <Form.Group className="mb-4 profile-image-upload">
-                <div className="d-flex flex-column align-items-center">
-                  {formData.profile_image_preview ? (
-                    <div className="position-relative">
-                      <Image
-                        src={formData.profile_image_preview}
-                        alt="Profile Preview"
-                        roundedCircle
-                        style={{ width: '150px', height: '150px', objectFit: 'cover' }}
-                      />
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className="position-absolute top-0 end-0"
-                        onClick={removeProfileImage}
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  ) : (
-                    <div
-                      className="upload-icon-container d-flex align-items-center justify-content-center"
-                      onClick={() => fileInputRef.current.click()}
-                      style={{
-                        cursor: 'pointer',
-                        width: '150px',
-                        height: '150px',
-                        border: '2px dashed #ccc',
-                        borderRadius: '50%',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.borderColor = '#0d6efd'}
-                      onMouseOut={(e) => e.currentTarget.style.borderColor = '#ccc'}
-                    >
-                      <i className="bi bi-cloud-arrow-up" style={{ fontSize: '3rem', color: '#0d6efd' }}></i>
-                    </div>
-                  )}
-                  <Form.Control
-                    type="file"
-                    ref={fileInputRef}
-                    name="profile_image"
-                    onChange={handleProfileImageChange}
-                    isInvalid={!!errors.profile_image}
-                    accept="image/*"
-                    className="profile-image-input d-none"
-                  />
-                  <Form.Text className="text-muted">
-                    {formData.profile_image_preview ? 'Click the image to change' : 'Click the icon to upload a profile picture (JPEG, JPG, PNG, or GIF, max 1MB)'}
-                  </Form.Text>
-                  <Form.Control.Feedback type="invalid" className="val-error">
-                    {errors.profile_image}
-                  </Form.Control.Feedback>
-                </div>
-              </Form.Group>
-                </div>
-              </Form.Group>
-              
-              {/* Team Name (only for organization) */}
-              {formData.user_type === 'organization' && (
-                <Form.Group className="mb-3">
-                  <Form.Label className="form-label-custom">Team Name *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="team_name"
-                    value={formData.team_name}
-                    onChange={handleChange}
-                    isInvalid={!!errors.team_name}
-                    placeholder="Enter your organization/team name"
-                    className="form-control-custom"
-                  />
-                  <Form.Control.Feedback type="invalid" className='val-error'>
-                    {errors.team_name}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              )}
-              
-              {/* Profile Image Upload */}
-           
+             {/* User Type and Profile Image Section */}
+<Row className="mb-4">
+  {/* Left Column - User Type and Team Name */}
+  <Col md={6}>
+    {/* User Type Selection */}
+    <Form.Group className="mb-4">
+      <Form.Label className="form-label-custom">Registration Type <span className="star">*</span> </Form.Label>
+      <div className="d-flex">
+        <Form.Check
+          type="radio"
+          id="individual-type"
+          name="user_type"
+          label="Individual"
+          value="individual"
+          checked={formData.user_type === 'individual'}
+          onChange={() => handleUserTypeChange('individual')}
+          className="me-4 user-type-option"
+        />
+        <Form.Check
+          type="radio"
+          id="organization-type"
+          name="user_type"
+          label="Organization"
+          value="organization"
+          checked={formData.user_type === 'organization'}
+          onChange={() => handleUserTypeChange('organization')}
+          className="user-type-option"
+        />
+      </div>
+      {userTypeError && (
+        <div className="val-error mt-1 text-danger">
+          {userTypeError}
+        </div>
+      )}
+    </Form.Group>
+    
+    {/* Team Name (only for organization) */}
+    {formData.user_type === 'organization' && (
+      <Form.Group className="mb-3">
+        <Form.Label className="form-label-custom">Team Name <span className="star">*</span></Form.Label>
+        <Form.Control
+          type="text"
+          name="team_name"
+          value={formData.team_name}
+          onChange={handleChange}
+          isInvalid={!!errors.team_name}
+          placeholder="Enter your organization/team name"
+          className="form-control-custom"
+        />
+        <Form.Control.Feedback type="invalid" className='val-error'>
+          {errors.team_name}
+        </Form.Control.Feedback>
+      </Form.Group>
+    )}
+  </Col>
+  
+  {/* Right Column - Profile Image Upload */}
+  <Col md={6}>
+    <Form.Group className="profile-image-upload">
+      <Form.Label className="form-label-custom">Profile Image</Form.Label>
+      <div className="d-flex flex-column align-items-center">
+        {formData.profile_image_preview ? (
+          <div className="position-relative">
+            <Image
+              src={formData.profile_image_preview}
+              alt="Profile Preview"
+              roundedCircle
+              style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+            />
+            <Button
+              variant="danger"
+              size="sm"
+              className="position-absolute top-0 end-0"
+              onClick={removeProfileImage}
+            >
+              ×
+            </Button>
+          </div>
+        ) : (
+          <div
+            className="upload-icon-container d-flex align-items-center justify-content-center"
+            onClick={() => fileInputRef.current.click()}
+            style={{
+              cursor: 'pointer',
+              width: '150px',
+              height: '150px',
+              border: '2px dashed #ccc',
+              borderRadius: '50%',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.borderColor = '#0d6efd'}
+            onMouseOut={(e) => e.currentTarget.style.borderColor = '#ccc'}
+          >
+            <i className="bi bi-cloud-arrow-up" style={{ fontSize: '3rem', color: '#0d6efd' }}></i>
+          </div>
+        )}
+        <Form.Control
+          type="file"
+          ref={fileInputRef}
+          name="profile_image"
+          onChange={handleProfileImageChange}
+          isInvalid={!!errors.profile_image}
+          accept="image/*"
+          className="profile-image-input d-none"
+        />
+        <Form.Text className="text-muted mt-2">
+          {formData.profile_image_preview ? 'Click the image to change' : 'Click the icon to upload a profile picture (JPEG, JPG, PNG, or GIF, max 1MB)'}
+        </Form.Text>
+        <Form.Control.Feedback type="invalid" className="val-error mt-2">
+          {errors.profile_image}
+        </Form.Control.Feedback>
+      </div>
+    </Form.Group>
+  </Col>
+</Row>
               
               {/* Full Name and Gender */}
               <Row>
                 <Col md={8}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">Full Name *</Form.Label>
+                    <Form.Label className="form-label-custom">Full Name <span className="star">*</span></Form.Label>
                     <Form.Control
                       type="text"
                       name="full_name"
@@ -1234,7 +1305,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">Gender *</Form.Label>
+                    <Form.Label className="form-label-custom">Gender <span className="star">*</span></Form.Label>
                     <div className="d-flex">
                       <Form.Check
                         type="radio"
@@ -1277,7 +1348,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label className="form-label-custom">Email Address *</Form.Label>
+                <Form.Label className="form-label-custom">Email Address<span className="star">*</span></Form.Label>
                 <Form.Control
                   type="email"
                   name="email"
@@ -1290,12 +1361,29 @@ const RegistrationModal = ({ show, handleClose }) => {
                 <Form.Control.Feedback type="invalid" className='val-error'>
                   {errors.email}
                 </Form.Control.Feedback>
+                {/* Display already registered message below the email field */}
+                {alreadyRegisteredMessage && (
+                  <Alert variant={alreadyRegisteredMessage.includes('not verified') ? 'warning' : 'info'} className="mt-2">
+                    {alreadyRegisteredMessage}
+                    {alreadyRegisteredMessage.includes('not verified') && (
+                      <div className="mt-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setCurrentStep('verification')}
+                        >
+                          Verify Email Now
+                        </Button>
+                      </div>
+                    )}
+                  </Alert>
+                )}
               </Form.Group>
 
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">Password *</Form.Label>
+                    <Form.Label className="form-label-custom">Password <span className="star">*</span></Form.Label>
                     <Form.Control
                       type="password"
                       name="password"
@@ -1312,7 +1400,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">Confirm Password *</Form.Label>
+                    <Form.Label className="form-label-custom">Confirm Password<span className="star">*</span></Form.Label>
                     <Form.Control
                       type="password"
                       name="confirmPassword"
@@ -1330,7 +1418,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label className="form-label-custom">Talent Scope *</Form.Label>
+                <Form.Label className="form-label-custom">Talent Scope <span className="star">*</span></Form.Label>
                 <Dropdown autoClose="outside">
                   <Dropdown.Toggle variant="" id="talent-scope-dropdown" className="dropdown-custom">
                     Select Your Talents
@@ -1366,7 +1454,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 {formData.user_type === 'individual' && (
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label className="form-label-custom">Date of Birth *</Form.Label>
+                      <Form.Label className="form-label-custom">Date of Birth <span className="star">*</span></Form.Label>
                       <Form.Control
                         type="date"
                         name="date_of_birth"
@@ -1384,7 +1472,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 )}
                 <Col md={formData.user_type === 'individual' ? 6 : 12}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">Phone Number *</Form.Label>
+                    <Form.Label className="form-label-custom">Phone Number<span className="star">*</span></Form.Label>
                     <Form.Control
                       type="text"
                       name="phone"
@@ -1398,19 +1486,25 @@ const RegistrationModal = ({ show, handleClose }) => {
                     <Form.Control.Feedback type="invalid" className='val-error'>
                       {errors.phone}
                     </Form.Control.Feedback>
+                    {/* Display phone number already in use message below the phone field */}
+                    {phoneAlreadyRegisteredMessage && (
+                      <Alert variant="info" className="mt-2">
+                        {phoneAlreadyRegisteredMessage}
+                      </Alert>
+                    )}
                   </Form.Group>
                 </Col>
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label className="form-label-custom">Social Media Links *</Form.Label>
+                <Form.Label className="form-label-custom">Social Media Links </Form.Label>
                 {formData.social_media_links.map((link, index) => (
                   <div key={index} className="d-flex mb-2">
                     <Form.Control
                       type="url"
                       value={link}
                       onChange={(e) => handleSocialMediaLinkChange(index, e.target.value)}
-                      isInvalid={!!getLinkError('social_media_links', index)}
+                    
                       placeholder="https://github.com/username"
                       className="form-control-custom"
                     />
@@ -1440,7 +1534,43 @@ const RegistrationModal = ({ show, handleClose }) => {
                 )}
               </Form.Group>
 
-           
+              <Form.Group className="mb-3">
+                <Form.Label className="form-label-custom">Additional Links</Form.Label>
+                {formData.additional_links.map((link, index) => (
+                  <div key={index} className="d-flex mb-2">
+                    <Form.Control
+                      type="url"
+                      value={link}
+                      onChange={(e) => handleAdditionalLinkChange(index, e.target.value)}
+                      isInvalid={!!getLinkError('additional_links', index)}
+                      placeholder="https://example.com/additional"
+                      className="form-control-custom"
+                    />
+                    {formData.additional_links.length > 1 && (
+                      <Button
+                        variant="outline-danger"
+                        className="ms-2"
+                        onClick={() => removeAdditionalLink(index)}
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={addAdditionalLink}
+                  className="mt-2"
+                >
+                  + Add Another Link
+                </Button>
+                {errors.additional_links && typeof errors.additional_links === 'string' && (
+                  <div className="val-error mt-1 text-danger">
+                    {errors.additional_links}
+                  </div>
+                )}
+              </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label className="form-label-custom">Portfolio Links</Form.Label>
@@ -1483,7 +1613,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               <Row>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">Country *</Form.Label>
+                    <Form.Label className="form-label-custom">Country <span className="star">*</span></Form.Label>
                     <Form.Control
                       type="text"
                       name="country"
@@ -1500,7 +1630,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">State *</Form.Label>
+                    <Form.Label className="form-label-custom">State <span className="star">*</span></Form.Label>
                     <Form.Control
                       type="text"
                       name="state"
@@ -1517,7 +1647,7 @@ const RegistrationModal = ({ show, handleClose }) => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-custom">City *</Form.Label>
+                    <Form.Label className="form-label-custom">City <span className="star">*</span></Form.Label>
                     <Form.Control
                       type="text"
                       name="city"
@@ -1535,7 +1665,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label className="form-label-custom">Address *</Form.Label>
+                <Form.Label className="form-label-custom">Address <span className="star">*</span></Form.Label>
                 <Form.Control
                   type="text"
                   name="address"
@@ -1551,7 +1681,7 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label className="form-label-custom">Introduction *</Form.Label>
+                <Form.Label className="form-label-custom">Introduction <span className="star">*</span></Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={4}
@@ -1668,6 +1798,22 @@ const RegistrationModal = ({ show, handleClose }) => {
               </Form.Group>
             </Form>
           )
+        ) : currentStep === 'preview' ? (
+          // Registration Preview
+          <div className="preview-container">
+            <RegistrationPreview formData={formData} certificateUrls={certificateUrls} />
+            
+            <div className="preview-actions mt-4 text-end">
+              <Button 
+                variant="secondary" 
+                onClick={() => setCurrentStep('registration')} 
+                className="me-2"
+              >
+                Back to Edit
+              </Button>
+             
+            </div>
+          </div>
         ) : (
           // Email Verification Form
           verificationSuccess ? (
@@ -1683,13 +1829,6 @@ const RegistrationModal = ({ show, handleClose }) => {
             <Form onSubmit={handleVerificationSubmit}>
               {apiError && <Alert variant="danger">{apiError}</Alert>}
               {resendSuccess && <Alert variant="success">Verification code sent successfully!</Alert>}
-              
-              {/* Display already registered message if it exists */}
-              {alreadyRegisteredMessage && (
-                <Alert variant={alreadyRegisteredMessage.includes('not verified') ? 'warning' : 'info'}>
-                  {alreadyRegisteredMessage}
-                </Alert>
-              )}
               
               <div className="text-center mb-4">
                 <div className="verification-icon mb-3">
@@ -1743,14 +1882,29 @@ const RegistrationModal = ({ show, handleClose }) => {
             </Button>
             <Button 
               variant="primary" 
-              onClick={handleRegistrationSubmit} 
+              onClick={handlePreviewClick} 
               disabled={isSubmitting || submitSuccess}
               className="btn-custom-primary"
             >
-              {isSubmitting ? 'Registering...' : 'Register'}
+              {isSubmitting ? 'Validating...' : 'Preview'}
+            </Button>
+          </>
+        ) : currentStep === 'preview' ? (
+          <>
+            <Button variant="secondary" onClick={handleClose} className="btn-custom-secondary">
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={handleRegistrationSubmit} 
+              disabled={isSubmitting}
+              className="btn-custom-primary"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Registration'}
             </Button>
           </>
         ) : (
+          // Verification step buttons
           <>
             <Button variant="secondary" onClick={handleClose} className="btn-custom-secondary">
               Cancel

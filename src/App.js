@@ -29,6 +29,12 @@ import ManageHeader from "./componets/event_panel/header/ManageHeader";
 import TotalRegistration from "./componets/event_panel/totalregistration/TotalRegistration";
 import AddEvent from "./componets/event_panel/dashboard_pages/event_create/AddEvent";
 import ManageEvent from "./componets/event_panel/dashboard_pages/event_create/ManageEvent";
+import AddCarousel from "./componets/event_panel/dashboard_pages/AddCarousel";
+import ManageCarousel from "./componets/event_panel/dashboard_pages/ManageCarousel";
+import AddAboutUs from "./componets/event_panel/dashboard_pages/AddAboutUs";
+import ManageAboutUs from "./componets/event_panel/dashboard_pages/ManageAboutUs";
+import Events from "./componets/pages/Events";
+import ParticipatedUser from "./componets/event_panel/dashboard_pages/ParticipatedUser";
 
 
 // import AboutUs from "./componets/pages/AboutUs";
@@ -51,7 +57,13 @@ function App() {
     "/ManageHeader",
     "/TotalRegistration",
     "/AddEvent",
-    "/ManageEvent"
+    "/ManageEvent",
+    "/AddCarousel",
+    "/ManageCarousel",
+    "/AddAboutUs",
+    "/ManageAboutUs",
+    "/UserDashBoard",
+    "/ParticipatedUser"
   ]);
 
   const shouldHideNavbar = hiddenPaths.has(location.pathname);
@@ -78,7 +90,13 @@ function App() {
                <Route path="/TotalRegistration" element={<TotalRegistration />} />
                <Route path="/AddEvent" element={<AddEvent />} />
                <Route path="/ManageEvent" element={<ManageEvent />} />
-          
+               <Route path="/AddCarousel" element={<AddCarousel />} />
+               <Route path="/ManageCarousel" element={<ManageCarousel />} />
+               <Route path="/AddAboutUs" element={<AddAboutUs />} />
+               <Route path="/ManageAboutUs" element={<ManageAboutUs />} />
+               <Route path="/Events" element={<Events />} />
+               <Route path="/ParticipatedUser" element={<ParticipatedUser />} />
+               
           </Routes>
         </main>
            {!shouldHideNavbar && <Footer />}

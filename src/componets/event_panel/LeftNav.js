@@ -64,6 +64,12 @@ const menuItems = [
       path: "/TotalRegistration",
       active: true,
     },
+     {
+      icon: <FaTachometerAlt />,
+      label: "Total Participated User",
+      path: "/ParticipatedUser",
+      active: true,
+    },
 
 
    {
@@ -71,7 +77,7 @@ const menuItems = [
   label: "Event",
   submenu: [
     {
-      label: "Add Evetn",
+      label: "Add Event",
       path: "/AddEvent",
       icon: <FaUserCircle />, // profile
     },
@@ -84,7 +90,42 @@ const menuItems = [
    
   ],
 },
-
+   {
+  icon: <FaInfoCircle />,   // About Us main
+  label: "Carousel",
+  submenu: [
+    {
+      label: "AddCarousel ",
+      path: "/AddCarousel",
+      icon: <FaUserCircle />, // profile
+    },
+     {
+          label: "Manage Carousel",
+          path: "/ManageCarousel",
+          icon: <FaImage />,
+        },
+   
+   
+  ],
+},
+   {
+  icon: <FaInfoCircle />,   // About Us main
+  label: "AboutUs",
+  submenu: [
+    {
+      label: "Add AboutUs",
+      path: "/AddAboutUs",
+      icon: <FaUserCircle />, // profile
+    },
+     {
+          label: "Manage AboutUs",
+          path: "/ManageAboutUs",
+          icon: <FaImage />,
+        },
+   
+   
+  ],
+},
    {
   icon: <FaInfoCircle />,   // About Us main
   label: "Header",

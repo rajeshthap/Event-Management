@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert, Card, Modal } from "react-bootstrap";
-
-
+import { Container, Row, Col, Form, Button, Alert, Card, Modal, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-
-import { FaEdit, FaArrowLeft, FaTrash, FaPlus, FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
+import { FaEdit, FaArrowLeft, FaTrash, FaPlus, FaCalendarAlt, FaMapMarkerAlt, FaInfoCircle } from "react-icons/fa";
 import DashBoardHeader from "../../DashBoardHeader";
 import LeftNav from "../../LeftNav";
 import { useAuth } from "../../../context/AuthContext";
@@ -29,6 +26,12 @@ const ManageEvent = () => {
     description: "",
     event_date_time: "",
     venue: "",
+    event_type: "",
+    is_past: false,
+    is_present: false,
+    is_upcoming: false,
+    created_at: "",
+    updated_at: ""
   });
 
   // Submission state
@@ -83,6 +86,9 @@ const ManageEvent = () => {
 
       if (result.success && result.data && result.data.length > 0) {
         setEvents(result.data);
+      } else if (Array.isArray(result)) {
+        // Handle direct array response
+        setEvents(result);
       } else {
         setEvents([]);
       }
@@ -112,39 +118,53 @@ const ManageEvent = () => {
       const result = await response.json();
       console.log("GET Event Details API Response:", result);
 
-      if (result.success) {
-        let eventData;
-        
-        // Check if data is an array or a single object
+      let eventData;
+      
+      // Check if data is an array or a single object
+      if (Array.isArray(result)) {
+        eventData = result.find(item => item.id.toString() === eventId.toString());
+        if (!eventData) {
+          throw new Error(`Event with ID ${eventId} not found in response array`);
+        }
+      } else if (result.data) {
         if (Array.isArray(result.data)) {
           eventData = result.data.find(item => item.id.toString() === eventId.toString());
           if (!eventData) {
             throw new Error(`Event with ID ${eventId} not found in response array`);
           }
-        } else if (result.data && result.data.id) {
-          if (result.data.id.toString() === eventId.toString()) {
-            eventData = result.data;
-          } else {
-            throw new Error(`Returned event ID ${result.data.id} does not match requested ID ${eventId}`);
-          }
+        } else if (result.data.id && result.data.id.toString() === eventId.toString()) {
+          eventData = result.data;
         } else {
-          throw new Error("Invalid event data structure in response");
+          throw new Error(`Returned event ID ${result.data.id} does not match requested ID ${eventId}`);
         }
-
-        setFormData({
-          id: eventData.id,
-          event_id: eventData.event_id,
-          event_name: eventData.event_name,
-          description: eventData.description,
-          event_date_time: eventData.event_date_time,
-          venue: eventData.venue,
-        });
-
-        setSelectedEventId(eventId);
+      } else if (result.id && result.id.toString() === eventId.toString()) {
+        eventData = result;
       } else {
-        console.error("API Response issue:", result);
-        throw new Error(result.message || "No event data found in response");
+        throw new Error("Invalid event data structure in response");
       }
+
+      // Clean up description field if it has the extra "description\": " part
+      let cleanDescription = eventData.description;
+      if (cleanDescription && cleanDescription.includes('description": "')) {
+        cleanDescription = cleanDescription.replace(/.*?description": "(.*?)".*?/, '$1');
+      }
+
+      setFormData({
+        id: eventData.id,
+        event_id: eventData.event_id,
+        event_name: eventData.event_name,
+        description: cleanDescription,
+        event_date_time: eventData.event_date_time,
+        venue: eventData.venue,
+        event_type: eventData.event_type || "",
+        is_past: eventData.is_past,
+        is_present: eventData.is_present,
+        is_upcoming: eventData.is_upcoming,
+        created_at: eventData.created_at,
+        updated_at: eventData.updated_at
+      });
+
+      setSelectedEventId(eventId);
     } catch (error) {
       console.error("Error fetching event data:", error);
       setMessage(error.message || "An error occurred while fetching event data");
@@ -202,10 +222,47 @@ const ManageEvent = () => {
       description: "",
       event_date_time: "",
       venue: "",
+      event_type: "",
+      is_past: false,
+      is_present: false,
+      is_upcoming: false,
+      created_at: "",
+      updated_at: ""
     });
     setIsEditing(true);
     setSelectedEventId(null);
     setShowAlert(false);
+  };
+
+  // Calculate event status based on date
+  const calculateEventStatus = (eventDateTime) => {
+    if (!eventDateTime) return { is_past: false, is_present: false, is_upcoming: false };
+    
+    const eventDate = new Date(eventDateTime);
+    const now = new Date();
+    
+    // Check if the event is in the past, present, or future
+    const isPast = eventDate < now;
+    const isPresent = Math.abs(eventDate - now) < 24 * 60 * 60 * 1000; // Within 24 hours
+    const isUpcoming = eventDate > now;
+    
+    return {
+      is_past: isPast,
+      is_present: isPresent && !isPast,
+      is_upcoming: isUpcoming
+    };
+  };
+
+  // Get status badge component
+  const getStatusBadge = (isPast, isPresent, isUpcoming) => {
+    if (isPast) {
+      return <Badge bg="secondary">Past</Badge>;
+    } else if (isPresent) {
+      return <Badge bg="success">Ongoing</Badge>;
+    } else if (isUpcoming) {
+      return <Badge bg="primary">Upcoming</Badge>;
+    }
+    return <Badge bg="secondary">Not Set</Badge>;
   };
 
   // Handle form submission (POST for new, PUT for update)
@@ -215,12 +272,19 @@ const ManageEvent = () => {
     setShowAlert(false);
 
     try {
+      // Calculate status based on event date
+      const status = calculateEventStatus(formData.event_date_time);
+      
       const payload = {
         event_id: formData.event_id,
         event_name: formData.event_name,
         description: formData.description,
         event_date_time: formData.event_date_time,
         venue: formData.venue,
+        event_type: formData.event_type || null,
+        is_past: status.is_past,
+        is_present: status.is_present,
+        is_upcoming: status.is_upcoming
       };
 
       console.log("Submitting data for event:", formData.event_name);
@@ -231,6 +295,7 @@ const ManageEvent = () => {
       
       if (formData.id) {
         // Update existing event
+        payload.id = formData.id;
         response = await authFetch(
           `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/`,
           {
@@ -370,6 +435,18 @@ const ManageEvent = () => {
     return date.toLocaleString();
   };
 
+  // Format date for input
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   return (
     <>
       <div className="dashboard-container">
@@ -431,17 +508,25 @@ const ManageEvent = () => {
                                 <Card className="h-100 event-card profile-card">
                                   <Card.Body className="d-flex flex-column">
                                     <div className="flex-grow-1">
-                                      <Card.Title as="h5" className="mb-3">
-                                        {event.event_name}
-                                      </Card.Title>
+                                      <div className="d-flex justify-content-between align-items-start mb-2">
+                                        <Card.Title as="h5" className="mb-0">
+                                          {event.event_name}
+                                        </Card.Title>
+                                        {getStatusBadge(event.is_past, event.is_present, event.is_upcoming)}
+                                      </div>
                                       <Card.Text className="text-muted mb-2">
                                         <strong>ID:</strong> {event.event_id}
                                       </Card.Text>
                                       <Card.Text className="text-muted mb-2">
-                                        <strong>Date & Time:</strong> {formatDate(event.event_date_time)}
+                                        <strong>Type:</strong> {event.event_type || "Not specified"}
                                       </Card.Text>
                                       <Card.Text className="text-muted mb-2">
-                                        <strong>Venue:</strong> {event.venue}
+                                        <FaCalendarAlt className="me-1" />
+                                        {formatDate(event.event_date_time)}
+                                      </Card.Text>
+                                      <Card.Text className="text-muted mb-2">
+                                        <FaMapMarkerAlt className="me-1" />
+                                        {event.venue}
                                       </Card.Text>
                                       <Card.Text className="text-muted mb-3">
                                         {event.description && event.description.length > 100 
@@ -484,12 +569,46 @@ const ManageEvent = () => {
                     </div>
 
                     <Card className="mb-4">
-                      <Card.Header as="h5">
-                        {formData.id ? `Edit Event: ${formData.event_name}` : "Add New Event"}
+                      <Card.Header as="h5" className="d-flex justify-content-between align-items-center">
+                        <span>{formData.id ? `Edit Event: ${formData.event_name}` : "Add New Event"}</span>
+                        {formData.id && getStatusBadge(formData.is_past, formData.is_present, formData.is_upcoming)}
                       </Card.Header>
                       <Card.Body>
                         <Form onSubmit={handleSubmit}>
-                       
+                          <Row>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Event ID</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="event_id"
+                                  value={formData.event_id}
+                                  onChange={handleChange}
+                                  disabled={!isEditing}
+                                  placeholder="Generated automatically"
+                                />
+                              </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Event Type</Form.Label>
+                                <Form.Select
+                                  name="event_type"
+                                  value={formData.event_type}
+                                  onChange={handleChange}
+                                  disabled={!isEditing}
+                                >
+                                  <option value="">Select event type</option>
+                                  <option value="conference">Conference</option>
+                                  <option value="workshop">Workshop</option>
+                                  <option value="seminar">Seminar</option>
+                                  <option value="webinar">Webinar</option>
+                                  <option value="networking">Networking</option>
+                                  <option value="other">Other</option>
+                                </Form.Select>
+                              </Form.Group>
+                            </Col>
+                          </Row>
 
                           <Form.Group className="mb-3">
                             <Form.Label>Event Name</Form.Label>
@@ -518,30 +637,60 @@ const ManageEvent = () => {
                             />
                           </Form.Group>
 
-                          <Form.Group className="mb-3">
-                            <Form.Label>Date & Time</Form.Label>
-                            <Form.Control
-                              type="datetime-local"
-                              name="event_date_time"
-                              value={formData.event_date_time}
-                              onChange={handleChange}
-                              required
-                              disabled={!isEditing}
-                            />
-                          </Form.Group>
+                          <Row>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Date & Time</Form.Label>
+                                <Form.Control
+                                  type="datetime-local"
+                                  name="event_date_time"
+                                  value={formData.event_date_time ? formatDateForInput(formData.event_date_time) : ""}
+                                  onChange={handleChange}
+                                  required
+                                  disabled={!isEditing}
+                                />
+                              </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Venue</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  placeholder="Enter event venue"
+                                  name="venue"
+                                  value={formData.venue}
+                                  onChange={handleChange}
+                                  required
+                                  disabled={!isEditing}
+                                />
+                              </Form.Group>
+                            </Col>
+                          </Row>
 
-                          <Form.Group className="mb-3">
-                            <Form.Label>Venue</Form.Label>
-                            <Form.Control
-                              type="text"
-                              placeholder="Enter event venue"
-                              name="venue"
-                              value={formData.venue}
-                              onChange={handleChange}
-                              required
-                              disabled={!isEditing}
-                            />
-                          </Form.Group>
+                          {formData.id && (
+                            <Row>
+                              <Col md={6}>
+                                <Form.Group className="mb-3">
+                                  <Form.Label>Created At</Form.Label>
+                                  <Form.Control
+                                    type="text"
+                                    value={formatDate(formData.created_at)}
+                                    disabled
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col md={6}>
+                                <Form.Group className="mb-3">
+                                  <Form.Label>Updated At</Form.Label>
+                                  <Form.Control
+                                    type="text"
+                                    value={formatDate(formData.updated_at)}
+                                    disabled
+                                  />
+                                </Form.Group>
+                              </Col>
+                            </Row>
+                          )}
                         </Form>
                       </Card.Body>
                     </Card>

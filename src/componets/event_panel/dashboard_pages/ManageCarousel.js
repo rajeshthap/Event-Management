@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert, Card, Badge } from "react-bootstrap";
-import "../../../assets/css/dashboard.css";
-import { useAuth } from "../../context/AuthContext";
-import { useAuthFetch } from "../../context/AuthFetch";
+import { Container, Row, Col, Form, Button, Alert, Card, Modal, Spinner } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { FaEdit, FaArrowLeft, FaTrash, FaPlus, FaImage } from "react-icons/fa";
 import LeftNav from "../LeftNav";
 import DashBoardHeader from "../DashBoardHeader";
-import { FaTrash, FaEdit, FaArrowLeft } from "react-icons/fa";
+import { useAuthFetch } from "../../context/AuthFetch";
+import { useAuth } from "../../context/AuthContext";
 
 const ManageCarousel = () => {
-  const { auth, refreshAccessToken } = useAuth();
+  const { auth, logout, refreshAccessToken, isLoading: authLoading, isAuthenticated } = useAuth();
   const authFetch = useAuthFetch();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -21,13 +22,11 @@ const ManageCarousel = () => {
   const [formData, setFormData] = useState({
     id: null,
     title: "",
+    sub_title: "",
     description: "",
     image: null,
+    imagePreview: null,
   });
-
-  // State for image preview
-  const [imagePreview, setImagePreview] = useState(null);
-  const [existingImage, setExistingImage] = useState(null);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +38,10 @@ const ManageCarousel = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(null);
+
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   // Check device width
   useEffect(() => {
@@ -53,17 +56,13 @@ const ManageCarousel = () => {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
-  // Fetch all carousel items on component mount
+  // Fetch all carousel items when auth is ready
   useEffect(() => {
-    fetchAllCarouselItems();
-  }, []);
-
-  // Cleanup object URLs to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
-    };
-  }, [imagePreview]);
+    // Only fetch when auth is not loading and user is authenticated
+    if (!authLoading && isAuthenticated) {
+      fetchAllCarouselItems();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -71,15 +70,12 @@ const ManageCarousel = () => {
   const fetchAllCarouselItems = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        "https://mahadevaaya.com/trilokayurveda/trilokabackend/api/carousel-items/",
-        {
-          method: "GET",
-        }
+      const response = await authFetch(
+        "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/"
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch carousel items data");
+        throw new Error("Failed to fetch carousel data");
       }
 
       const result = await response.json();
@@ -88,10 +84,10 @@ const ManageCarousel = () => {
       if (result.success && result.data && result.data.length > 0) {
         setCarouselItems(result.data);
       } else {
-        throw new Error("No carousel items found");
+        setCarouselItems([]);
       }
     } catch (error) {
-      console.error("Error fetching carousel items data:", error);
+      console.error("Error fetching carousel data:", error);
       setMessage(error.message || "An error occurred while fetching data");
       setVariant("danger");
       setShowAlert(true);
@@ -105,11 +101,8 @@ const ManageCarousel = () => {
     setIsLoading(true);
     try {
       console.log("Fetching carousel item with ID:", itemId);
-      const response = await fetch(
-        `https://mahadevaaya.com/trilokayurveda/trilokabackend/api/carousel-items/?id=${itemId}`,
-        {
-          method: "GET",
-        }
+      const response = await authFetch(
+        `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/`
       );
 
       if (!response.ok) {
@@ -117,24 +110,22 @@ const ManageCarousel = () => {
       }
 
       const result = await response.json();
-      console.log("GET Carousel Item API Response:", result);
+      console.log("GET Carousel Item Details API Response:", result);
 
       if (result.success) {
         let itemData;
         
-        // Check if data is an array (like in the get all response) or a single object
+        // Check if data is an array or a single object
         if (Array.isArray(result.data)) {
-          // If it's an array, find the carousel item with matching ID
           itemData = result.data.find(item => item.id.toString() === itemId.toString());
           if (!itemData) {
             throw new Error(`Carousel item with ID ${itemId} not found in response array`);
           }
         } else if (result.data && result.data.id) {
-          // If data is a single object, check if it's the one we want
           if (result.data.id.toString() === itemId.toString()) {
             itemData = result.data;
           } else {
-            throw new Error(`Returned carousel item ID ${result.data.id} does not match requested ID ${itemId}`);
+            throw new Error(`Returned item ID ${result.data.id} does not match requested ID ${itemId}`);
           }
         } else {
           throw new Error("Invalid carousel item data structure in response");
@@ -143,12 +134,12 @@ const ManageCarousel = () => {
         setFormData({
           id: itemData.id,
           title: itemData.title,
+          sub_title: itemData.sub_title,
           description: itemData.description,
-          image: null,
+          image: null, // We don't store the actual image file, just the URL
+          imagePreview: itemData.image,
         });
 
-        // Set existing image URL for preview
-        setExistingImage(itemData.image);
         setSelectedItemId(itemId);
       } else {
         console.error("API Response issue:", result);
@@ -172,26 +163,26 @@ const ManageCarousel = () => {
 
   // Handle form input changes
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-    if (name === "image") {
-      const file = files[0];
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-      }));
-
-      if (file) {
-        const previewUrl = URL.createObjectURL(file);
-        setImagePreview(previewUrl);
-      } else {
-        setImagePreview(null);
-      }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+  // Handle image file change
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          image: file,
+          imagePreview: reader.result,
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -200,13 +191,12 @@ const ManageCarousel = () => {
     if (selectedItemId) {
       fetchCarouselItemData(selectedItemId);
     }
-    setImagePreview(null);
     setIsEditing(false);
     setShowAlert(false);
   };
 
-  // Go back to carousel item list
-  const backToItemList = () => {
+  // Go back to carousel list
+  const backToCarouselList = () => {
     setSelectedItemId(null);
     setIsEditing(false);
     setShowAlert(false);
@@ -219,178 +209,100 @@ const ManageCarousel = () => {
     setShowAlert(false);
   };
 
-  // Handle form submission (PUT request)
+  // Enable adding new carousel item
+  const addNewCarouselItem = () => {
+    setFormData({
+      id: null,
+      title: "",
+      sub_title: "",
+      description: "",
+      image: null,
+      imagePreview: null,
+    });
+    setIsEditing(true);
+    setSelectedItemId(null);
+    setShowAlert(false);
+  };
+
+  // Handle form submission (POST for new, PUT for update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setShowAlert(false);
 
     try {
-      // Prepare the data for submission
-      const payload = {
-        id: formData.id,
-        title: formData.title,
-        description: formData.description,
-      };
-
-      console.log("Submitting data for carousel item ID:", formData.id);
-      console.log("Payload:", payload);
-
-      // If we have a new image, we need to handle it with FormData
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("sub_title", formData.sub_title);
+      formDataToSend.append("description", formData.description);
+      
       if (formData.image) {
-        const dataToSend = new FormData();
-        dataToSend.append("id", formData.id);
-        dataToSend.append("title", formData.title);
-        dataToSend.append("description", formData.description);
-        
-        if (formData.image) {
-          dataToSend.append("image", formData.image, formData.image.name);
-        }
+        formDataToSend.append("image", formData.image);
+      }
 
-        console.log("FormData content:");
-        for (let pair of dataToSend.entries()) {
-          console.log(pair[0] + ": " + pair[1]);
-        }
+      console.log("Submitting data for carousel item:", formData.title);
 
-        const url = `https://mahadevaaya.com/trilokayurveda/trilokabackend/api/carousel-items/?id=${formData.id}`;
-        console.log("PUT URL:", url);
-        
-        let response = await fetch(url, {
-          method: "PUT",
-          body: dataToSend,
-          headers: {
-            Authorization: `Bearer ${auth?.access}`,
-          },
-        });
-
-        // If unauthorized, try refreshing token and retry once
-        if (response.status === 401) {
-          const newAccess = await refreshAccessToken();
-          if (!newAccess) throw new Error("Session expired");
-          response = await fetch(url, {
+      let response;
+      let successMessage;
+      
+      if (formData.id) {
+        // Update existing carousel item
+        formDataToSend.append("id", formData.id);
+        response = await authFetch(
+          `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/`,
+          {
             method: "PUT",
-            body: dataToSend,
-            headers: {
-              Authorization: `Bearer ${newAccess}`,
-            },
-          });
-        }
-
-        console.log("PUT Response status:", response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          let errorData = null;
-          try {
-            errorData = JSON.parse(errorText);
-          } catch (e) {
-            /* not JSON */
+            body: formDataToSend,
           }
-          console.error("Server error response:", errorData || errorText);
-          throw new Error(
-            (errorData && errorData.message) ||
-              "Failed to update carousel item"
-          );
-        }
-
-        const result = await response.json();
-        console.log("PUT Success response:", result);
-
-        if (result.success) {
-          setMessage("Carousel item updated successfully!");
-          setVariant("success");
-          setShowAlert(true);
-          setIsEditing(false);
-
-          // Update existing image if new one was uploaded
-          if (formData.image) {
-            if (result.data && result.data.image) {
-              setExistingImage(result.data.image);
-            }
-            setImagePreview(null);
-            setFormData((prev) => ({ ...prev, image: null }));
-          }
-
-          // Update the carousel item in the list
-          if (result.data) {
-            let updatedItem;
-            if (Array.isArray(result.data)) {
-              updatedItem = result.data.find(item => item.id === formData.id);
-            } else {
-              updatedItem = result.data;
-            }
-            
-            if (updatedItem) {
-              setCarouselItems(prevItems => 
-                prevItems.map(item => 
-                  item.id === formData.id ? updatedItem : item
-                )
-              );
-            }
-          }
-
-          setTimeout(() => setShowAlert(false), 3000);
-        } else {
-          throw new Error(
-            result.message || "Failed to update carousel item"
-          );
-        }
+        );
+        successMessage = "Carousel item updated successfully!";
       } else {
-        // For updates without new image, use JSON
-        const url = `https://mahadevaaya.com/trilokayurveda/trilokabackend/api/carousel-items/?id=${formData.id}`;
-        console.log("PUT URL (JSON):", url);
-        
-        const response = await authFetch(url, {
-          method: "PUT",
-          body: JSON.stringify(payload),
-        });
-
-        console.log("PUT Response status:", response.status);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error("Server error response:", errorData);
-          throw new Error(
-            errorData.message || "Failed to update carousel item"
-          );
-        }
-
-        const result = await response.json();
-        console.log("PUT Success response:", result);
-
-        if (result.success) {
-          setMessage("Carousel item updated successfully!");
-          setVariant("success");
-          setShowAlert(true);
-          setIsEditing(false);
-          
-          // Update the carousel item in the list
-          if (result.data) {
-            let updatedItem;
-            if (Array.isArray(result.data)) {
-              updatedItem = result.data.find(item => item.id === formData.id);
-            } else {
-              updatedItem = result.data;
-            }
-            
-            if (updatedItem) {
-              setCarouselItems(prevItems => 
-                prevItems.map(item => 
-                  item.id === formData.id ? updatedItem : item
-                )
-              );
-            }
+        // Create new carousel item
+        response = await authFetch(
+          "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/",
+          {
+            method: "POST",
+            body: formDataToSend,
           }
-          
-          setTimeout(() => setShowAlert(false), 3000);
-        } else {
-          throw new Error(
-            result.message || "Failed to update carousel item"
-          );
+        );
+        successMessage = "Carousel item created successfully!";
+      }
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error response:", errorData);
+        throw new Error(
+          errorData.message || "Failed to save carousel item details"
+        );
+      }
+
+      const result = await response.json();
+      console.log("Success response:", result);
+
+      if (result.success) {
+        setMessage(successMessage);
+        setVariant("success");
+        setShowAlert(true);
+        setIsEditing(false);
+        
+        // Refresh the carousel items list
+        await fetchAllCarouselItems();
+        
+        // If creating a new item, switch to view mode for the new item
+        if (!formData.id && result.data && result.data.id) {
+          fetchCarouselItemData(result.data.id);
         }
+        
+        setTimeout(() => setShowAlert(false), 3000);
+      } else {
+        throw new Error(
+          result.message || "Failed to save carousel item details"
+        );
       }
     } catch (error) {
-      console.error("Error updating carousel item:", error);
+      console.error("Error saving carousel item details:", error);
       let errorMessage = "An unexpected error occurred. Please try again.";
 
       if (
@@ -412,107 +324,100 @@ const ManageCarousel = () => {
     }
   };
 
-  // Handle delete request
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this carousel item?")) {
-      return;
-    }
-
+  // Handle delete carousel item
+  const handleDeleteItem = async () => {
+    if (!itemToDelete) return;
+    
     setIsSubmitting(true);
-    setShowAlert(false);
-
     try {
-      const url = `https://mahadevaaya.com/trilokayurveda/trilokabackend/api/carousel-items/?id=${formData.id}`;
-      console.log("DELETE URL:", url);
-      
-      // Create request body with the ID
-      const payload = { id: formData.id };
-      
-      let response = await fetch(url, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth?.access}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      // If unauthorized, try refreshing token and retry once
-      if (response.status === 401) {
-        const newAccess = await refreshAccessToken();
-        if (!newAccess) throw new Error("Session expired");
-        response = await fetch(url, {
+      const response = await authFetch(
+        `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/?id=${itemToDelete.id}`,
+        {
           method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${newAccess}`,
-          },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      console.log("DELETE Response status:", response.status);
+        }
+      );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        let errorData = null;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          /* not JSON */
-        }
-        console.error("Server error response:", errorData || errorText);
-        throw new Error(
-          (errorData && errorData.message) ||
-            "Failed to delete carousel item"
-        );
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete carousel item");
       }
 
       const result = await response.json();
-      console.log("DELETE Success response:", result);
-
+      
       if (result.success) {
         setMessage("Carousel item deleted successfully!");
         setVariant("success");
         setShowAlert(true);
         
-        // Remove the carousel item from the list
-        setCarouselItems(prevItems => 
-          prevItems.filter(item => item.id !== formData.id)
-        );
+        // Refresh the carousel items list
+        await fetchAllCarouselItems();
         
-        // Go back to the list view
-        setTimeout(() => {
-          backToItemList();
-          setShowAlert(false);
-        }, 2000);
+        // If we were viewing the deleted item, go back to the list
+        if (selectedItemId === itemToDelete.id) {
+          backToCarouselList();
+        }
+        
+        setTimeout(() => setShowAlert(false), 3000);
       } else {
-        throw new Error(
-          result.message || "Failed to delete carousel item"
-        );
+        throw new Error(result.message || "Failed to delete carousel item");
       }
     } catch (error) {
       console.error("Error deleting carousel item:", error);
-      let errorMessage = "An unexpected error occurred. Please try again.";
-
-      if (
-        error instanceof TypeError &&
-        error.message.includes("Failed to fetch")
-      ) {
-        errorMessage =
-          "Network error: Could not connect to the server. Please check the API endpoint.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      setMessage(errorMessage);
+      setMessage(error.message || "An error occurred while deleting the carousel item");
       setVariant("danger");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 5000);
     } finally {
       setIsSubmitting(false);
+      setShowDeleteModal(false);
+      setItemToDelete(null);
     }
   };
+
+  // Show delete confirmation modal
+  const showDeleteConfirmation = (item) => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  // Show loading spinner while auth is loading
+  if (authLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="main-content-dash d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show message and redirect
+  if (!isAuthenticated) {
+    return (
+      <div className="dashboard-container">
+        <div className="main-content-dash d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+          <div className="text-center">
+            <Alert variant="warning">
+              <Alert.Heading>Authentication Required</Alert.Heading>
+              <p>You need to be logged in to view this page.</p>
+              <Button variant="primary" onClick={() => navigate("/login")}>
+                Go to Login
+              </Button>
+            </Alert>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -526,11 +431,16 @@ const ManageCarousel = () => {
         />
 
         {/* Main Content */}
-        <div className="main-content">
+        <div className="main-content-dash">
           <DashBoardHeader toggleSidebar={toggleSidebar} />
 
           <Container fluid className="dashboard-body dashboard-main-container">
-            <h1 className="page-title">Manage Carousel</h1>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h1 className="page-title mb-0">Manage Carousel</h1>
+              <Button variant="primary" onClick={addNewCarouselItem}>
+                <FaPlus /> Add New Item
+              </Button>
+            </div>
 
             {/* Alert for success/error messages */}
             {showAlert && (
@@ -558,51 +468,59 @@ const ManageCarousel = () => {
                   <>
                     <Row className="mb-4">
                       <Col>
-                        <h2 className="mb-4">Select a Carousel Item to Edit</h2>
+                        <h2 className="mb-4">Select an Item to Edit</h2>
                         {carouselItems.length === 0 ? (
                           <Alert variant="info">
-                            No carousel items found. Please create carousel items first.
+                            No carousel items found. Click "Add New Item" to create one.
                           </Alert>
                         ) : (
                           <Row>
                             {carouselItems.map((item) => (
                               <Col md={6} lg={4} className="mb-4" key={item.id}>
-                                <Card 
-                                  className="h-100 carousel-card profile-card" 
-                                  onClick={() => handleItemClick(item.id)}
-                    
-                                >
-                                  <Card.Body>
-                                    <div className="d-flex flex-column">
-                                      {item.image ? (
-                                        <img
-                                          src={`https://mahadevaaya.com/trilokayurveda/trilokabackend${item.image}`}
-                                          alt={item.title}
-                                          className="rounded mb-3 img-wrapper"
-                                        />
-                                      ) : (
-                                        <div className="bg-secondary rounded d-flex align-items-center justify-content-center mb-3 img-wrapper"  > 
-                                           
-                                          <span className="text-white">
-                                            No Image
-                                          </span>
+                                <Card className="h-100 carousel-item-card profile-card">
+                                  <Card.Body className="d-flex flex-column">
+                                    <div className="flex-grow-1">
+                                      {item.image && (
+                                        <div className="mb-3 text-center">
+                                          <img 
+                                            src={`https://mahadevaaya.com${item.image}`} 
+                                            alt={item.title} 
+                                            className="img-fluid rounded"
+                                            style={{ maxHeight: "150px" }}
+                                          />
                                         </div>
                                       )}
-                                      <div>
-                                        <Card.Title as="h5" className="mb-2">
-                                          {item.title}
-                                        </Card.Title>
-                                        <Card.Text className="text-muted">
-                                          {item.description.length > 100 
-                                            ? `${item.description.substring(0, 100)}...` 
-                                            : item.description}
+                                      <Card.Title as="h5" className="mb-3">
+                                        {item.title}
+                                      </Card.Title>
+                                      {item.sub_title && (
+                                        <Card.Text className="text-muted mb-2">
+                                          <strong>Subtitle:</strong> {item.sub_title}
                                         </Card.Text>
-                                      </div>
+                                      )}
+                                      <Card.Text className="text-muted mb-2">
+                                        {item.description && item.description.length > 100 
+                                          ? `${item.description.substring(0, 100)}...` 
+                                          : item.description}
+                                      </Card.Text>
+                                      <Card.Text className="text-muted mb-3">
+                                        <small>Created: {formatDate(item.created_at)}</small>
+                                      </Card.Text>
                                     </div>
-                                    <div className="d-flex justify-content-between align-items-center mt-auto">
-                                     
-                                      <Button variant="outline-primary" size="sm">
+                                    <div className="d-flex justify-content-between mt-3">
+                                      <Button 
+                                        variant="outline-primary" 
+                                        size="sm"
+                                        onClick={() => handleItemClick(item.id)}
+                                      >
                                         <FaEdit /> Edit
+                                      </Button>
+                                      <Button 
+                                        variant="outline-danger" 
+                                        size="sm"
+                                        onClick={() => showDeleteConfirmation(item)}
+                                      >
+                                        <FaTrash /> Delete
                                       </Button>
                                     </div>
                                   </Card.Body>
@@ -618,89 +536,81 @@ const ManageCarousel = () => {
                   // Carousel Item Edit View
                   <>
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                      <Button variant="outline-secondary" onClick={backToItemList}>
-                        <FaArrowLeft /> Back to Carousel Items
+                      <Button variant="outline-secondary" onClick={backToCarouselList}>
+                        <FaArrowLeft /> Back to Carousel List
                       </Button>
-                      {!isEditing && (
-                        <Button variant="danger" onClick={handleDelete} disabled={isSubmitting}>
-                          <FaTrash /> Delete Item
-                        </Button>
-                      )}
                     </div>
 
-                    <Form onSubmit={handleSubmit}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Title</Form.Label>
-                        <Form.Control
-                          type="text"
-                          placeholder="Enter title"
-                          name="title"
-                          value={formData.title}
-                          onChange={handleChange}
-                          required
-                          disabled={!isEditing}
-                        />
-                      </Form.Group>
-
-                      <Form.Group className="mb-3">
-                        <Form.Label>Description</Form.Label>
-                        <Form.Control
-                          as="textarea"
-                          rows={3}
-                          placeholder="Enter description"
-                          name="description"
-                          value={formData.description}
-                          onChange={handleChange}
-                          required
-                          disabled={!isEditing}
-                        />
-                      </Form.Group>
-
-                      <Form.Group className="mb-3">
-                        <Form.Label>Image</Form.Label>
-                        {isEditing ? (
-                          <>
+                    <Card className="mb-4">
+                      <Card.Header as="h5">
+                        {formData.id ? `Edit Carousel Item: ${formData.title}` : "Add New Carousel Item"}
+                      </Card.Header>
+                      <Card.Body>
+                        <Form onSubmit={handleSubmit}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Title</Form.Label>
                             <Form.Control
-                              type="file"
-                              name="image"
+                              type="text"
+                              placeholder="Enter carousel item title"
+                              name="title"
+                              value={formData.title}
                               onChange={handleChange}
-                              accept="image/*"
+                              required
+                              disabled={!isEditing}
                             />
-                            {imagePreview ? (
-                              <div className="mt-3">
-                                <p>New Image Preview:</p>
-                                <img
-                                  src={imagePreview}
-                                  alt="Image Preview"
-                                 className="img-current"
+                          </Form.Group>
+
+                          <Form.Group className="mb-3">
+                            <Form.Label>Subtitle</Form.Label>
+                            <Form.Control
+                              type="text"
+                              placeholder="Enter subtitle (optional)"
+                              name="sub_title"
+                              value={formData.sub_title}
+                              onChange={handleChange}
+                              disabled={!isEditing}
+                            />
+                          </Form.Group>
+
+                          <Form.Group className="mb-3">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control
+                              as="textarea"
+                              rows={4}
+                              placeholder="Enter carousel item description"
+                              name="description"
+                              value={formData.description}
+                              onChange={handleChange}
+                              required
+                              disabled={!isEditing}
+                            />
+                          </Form.Group>
+
+                          <Form.Group className="mb-3">
+                            <Form.Label>Image</Form.Label>
+                            {formData.imagePreview && (
+                              <div className="mb-3">
+                                <img 
+                                  src={typeof formData.imagePreview === 'string' && formData.imagePreview.startsWith('http') 
+                                    ? formData.imagePreview 
+                                    : formData.imagePreview} 
+                                  alt="Preview" 
+                                  className="img-fluid rounded"
+                                  style={{ maxHeight: "200px" }}
                                 />
                               </div>
-                            ) : (
-                              existingImage && (
-                                <div className="mt-3">
-                                  <p>Current Image:</p>
-                                  <img
-                                    src={`https://mahadevaaya.com/trilokayurveda/trilokabackend${existingImage}`}
-                                    alt="Current Image"
-                                  className="img-current"
-                                  />
-                                </div>
-                              )
                             )}
-                          </>
-                        ) : (
-                          existingImage && (
-                            <div className="mt-3">
-                              <img
-                                src={`https://mahadevaaya.com/trilokayurveda/trilokabackend${existingImage}`}
-                                alt="Current Image"
-                               className="img-current"
+                            {isEditing && (
+                              <Form.Control
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
                               />
-                            </div>
-                          )
-                        )}
-                      </Form.Group>
-                    </Form>
+                            )}
+                          </Form.Group>
+                        </Form>
+                      </Card.Body>
+                    </Card>
 
                     <div className="d-flex gap-2 mt-3">
                       {isEditing ? (
@@ -722,13 +632,22 @@ const ManageCarousel = () => {
                           </Button>
                         </>
                       ) : (
-                        <Button
-                          variant="primary"
-                          onClick={enableEditing}
-                          type="button"
-                        >
-                          Edit Carousel Item
-                        </Button>
+                        <>
+                          <Button
+                            variant="primary"
+                            onClick={enableEditing}
+                            type="button"
+                          >
+                            <FaEdit /> Edit Item Details
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            onClick={() => showDeleteConfirmation(formData)}
+                            type="button"
+                          >
+                            <FaTrash /> Delete Item
+                          </Button>
+                        </>
                       )}
                     </div>
                   </>
@@ -738,6 +657,28 @@ const ManageCarousel = () => {
           </Container>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete the carousel item "{itemToDelete?.title}"? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="danger" 
+            onClick={handleDeleteItem}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Deleting..." : "Delete"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

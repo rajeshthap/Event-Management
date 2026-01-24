@@ -6,7 +6,7 @@ import { useAuthFetch } from "../../context/AuthFetch";
 import { useNavigate } from "react-router-dom";
 import LeftNav from "../LeftNav";
 import DashBoardHeader from "../DashBoardHeader";
-import { FaEdit, FaArrowLeft, FaLink } from "react-icons/fa";
+import { FaEdit, FaArrowLeft, FaLink, FaPlus, FaTrash } from "react-icons/fa";
 
 const ManageHeader = () => {
   const { auth, refreshAccessToken } = useAuth();
@@ -94,7 +94,15 @@ const ManageHeader = () => {
       console.log("GET All Company Details API Response:", result);
 
       if (result.success && result.data && result.data.length > 0) {
-        setCompanyDetails(result.data);
+        // Normalize all company details to ensure profile_link is an array
+        const normalizedCompanies = result.data.map(company => ({
+          ...company,
+          profile_link: Array.isArray(company.profile_link) 
+            ? company.profile_link 
+            : (company.profile_link ? [company.profile_link] : [])
+        }));
+        
+        setCompanyDetails(normalizedCompanies);
       } else {
         throw new Error("No company details found");
       }
@@ -146,6 +154,11 @@ const ManageHeader = () => {
           throw new Error("Invalid company data structure in response");
         }
 
+        // Ensure profile_link is an array
+        const profileLinks = Array.isArray(companyData.profile_link) 
+          ? companyData.profile_link 
+          : (companyData.profile_link ? [companyData.profile_link] : []);
+
         setFormData({
           id: companyData.id,
           company_name: companyData.company_name,
@@ -153,7 +166,7 @@ const ManageHeader = () => {
           email: companyData.email,
           phone: companyData.phone,
           logo: null,
-          profile_link: companyData.profile_link || [],
+          profile_link: profileLinks,
         });
 
         // Set existing logo URL for preview
@@ -221,7 +234,7 @@ const ManageHeader = () => {
     if (newProfileLink.trim()) {
       setFormData((prev) => ({
         ...prev,
-        profile_link: [...prev.profile_link, newProfileLink],
+        profile_link: [...prev.profile_link, newProfileLink.trim()],
       }));
       setNewProfileLink("");
     }
@@ -272,6 +285,9 @@ const ManageHeader = () => {
     setShowAlert(false);
 
     try {
+      // Filter out empty profile links before submission
+      const filteredProfileLinks = formData.profile_link.filter(link => link.trim() !== "");
+
       // Prepare the data for submission
       const payload = {
         id: formData.id,
@@ -279,7 +295,7 @@ const ManageHeader = () => {
         address: formData.address,
         email: formData.email,
         phone: formData.phone,
-        profile_link: formData.profile_link,
+        profile_link: filteredProfileLinks,
       };
 
       console.log("Submitting data for company ID:", formData.id);
@@ -295,7 +311,7 @@ const ManageHeader = () => {
         dataToSend.append("phone", formData.phone);
         
         // Add profile links as JSON string
-        dataToSend.append("profile_link", JSON.stringify(formData.profile_link));
+        dataToSend.append('profile_link', JSON.stringify(filteredProfileLinks));
         
         if (formData.logo) {
           dataToSend.append("logo", formData.logo, formData.logo.name);
@@ -375,9 +391,16 @@ const ManageHeader = () => {
             }
             
             if (updatedCompany) {
+              // Ensure profile_link is always an array in the state
+              const companyWithArrayLinks = {
+                ...updatedCompany,
+                profile_link: Array.isArray(updatedCompany.profile_link) 
+                  ? updatedCompany.profile_link 
+                  : (updatedCompany.profile_link ? [updatedCompany.profile_link] : [])
+              };
               setCompanyDetails(prevCompanies => 
                 prevCompanies.map(company => 
-                  company.id === formData.id ? updatedCompany : company
+                  company.id === formData.id ? companyWithArrayLinks : company
                 )
               );
             }
@@ -428,9 +451,16 @@ const ManageHeader = () => {
             }
             
             if (updatedCompany) {
+              // Ensure profile_link is always an array in the state
+              const companyWithArrayLinks = {
+                ...updatedCompany,
+                profile_link: Array.isArray(updatedCompany.profile_link) 
+                  ? updatedCompany.profile_link 
+                  : (updatedCompany.profile_link ? [updatedCompany.profile_link] : [])
+              };
               setCompanyDetails(prevCompanies => 
                 prevCompanies.map(company => 
-                  company.id === formData.id ? updatedCompany : company
+                  company.id === formData.id ? companyWithArrayLinks : company
                 )
               );
             }
@@ -638,47 +668,55 @@ const ManageHeader = () => {
                       <Form.Group className="mb-3">
                         <Form.Label>Profile Links</Form.Label>
                         {isEditing ? (
-                          <>
+                          <div className="profile-links-container">
                             {formData.profile_link.map((link, index) => (
-                              <div key={index} className="d-flex mb-2">
+                              <div key={index} className="d-flex mb-2 align-items-center">
                                 <Form.Control
                                   type="text"
                                   value={link}
                                   onChange={(e) => handleProfileLinkChange(index, e.target.value)}
                                   placeholder="Enter profile link"
+                                  className="me-2"
                                 />
                                 <Button 
                                   variant="outline-danger" 
-                                  className="ms-2"
+                                  size="sm"
                                   onClick={() => removeProfileLink(index)}
+                                  title="Remove link"
                                 >
-                                  Remove
+                                  <FaTrash />
                                 </Button>
                               </div>
                             ))}
-                            <div className="d-flex">
+                            <div className="d-flex mb-2">
                               <Form.Control
                                 type="text"
                                 value={newProfileLink}
                                 onChange={(e) => setNewProfileLink(e.target.value)}
                                 placeholder="Add new profile link"
+                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addProfileLink())}
+                                className="me-2"
                               />
                               <Button 
                                 variant="outline-primary" 
-                                className="ms-2"
                                 onClick={addProfileLink}
+                                title="Add link"
                               >
-                                Add
+                                <FaPlus />
                               </Button>
                             </div>
-                          </>
+                            <Form.Text className="text-muted">
+                              Press Enter or click the + button to add a new profile link
+                            </Form.Text>
+                          </div>
                         ) : (
                           <div>
                             {formData.profile_link.length > 0 ? (
-                              <ul>
+                              <ul className="list-unstyled">
                                 {formData.profile_link.map((link, index) => (
-                                  <li key={index}>
-                                    <a href={link} target="_blank" rel="noopener noreferrer">
+                                  <li key={index} className="mb-2">
+                                    <a href={link} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center">
+                                      <FaLink className="text-primary me-2" />
                                       {link}
                                     </a>
                                   </li>

@@ -21,7 +21,15 @@ const AddEvent = () => {
     event_name: "",
     description: "",
     event_date_time: "",
-    venue: ""
+    venue: "",
+    event_type: ""
+  });
+
+  // Status fields (calculated based on event date time)
+  const [eventStatus, setEventStatus] = useState({
+    is_past: false,
+    is_present: false,
+    is_upcoming: false
   });
 
   // Validation errors
@@ -39,6 +47,31 @@ const AddEvent = () => {
     window.addEventListener("resize", checkDevice);
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
+
+  // Update event status whenever event_date_time changes
+  useEffect(() => {
+    if (formData.event_date_time) {
+      const eventDate = new Date(formData.event_date_time);
+      const now = new Date();
+      
+      // Check if the event is in the past, present, or future
+      const isPast = eventDate < now;
+      const isPresent = Math.abs(eventDate - now) < 24 * 60 * 60 * 1000; // Within 24 hours
+      const isUpcoming = eventDate > now;
+      
+      setEventStatus({
+        is_past: isPast,
+        is_present: isPresent && !isPast,
+        is_upcoming: isUpcoming
+      });
+    } else {
+      setEventStatus({
+        is_past: false,
+        is_present: false,
+        is_upcoming: false
+      });
+    }
+  }, [formData.event_date_time]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -104,10 +137,30 @@ const AddEvent = () => {
     setSuccess("");
     
     try {
-     const response = await authFetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/', {
-       method: 'POST',
-       body: JSON.stringify(formData)
-     });
+      // Create form data for API submission
+      const submitData = new FormData();
+      submitData.append('event_name', formData.event_name);
+      submitData.append('description', formData.description);
+      submitData.append('event_date_time', formData.event_date_time);
+      submitData.append('venue', formData.venue);
+      
+      // Only add event_type if it has a value
+      if (formData.event_type) {
+        submitData.append('event_type', formData.event_type);
+      }
+      
+      // Add status fields (calculated based on event date time)
+      submitData.append('is_past', eventStatus.is_past);
+      submitData.append('is_present', eventStatus.is_present);
+      submitData.append('is_upcoming', eventStatus.is_upcoming);
+      
+      const response = await authFetch(
+        'https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/',
+        {
+          method: 'POST',
+          body: submitData
+        }
+      );
       
       const data = await response.json();
       
@@ -118,7 +171,15 @@ const AddEvent = () => {
           event_name: "",
           description: "",
           event_date_time: "",
-          venue: ""
+          venue: "",
+          event_type: ""
+        });
+        
+        // Reset status
+        setEventStatus({
+          is_past: false,
+          is_present: false,
+          is_upcoming: false
         });
         
         // Redirect after 2 seconds
@@ -145,6 +206,18 @@ const AddEvent = () => {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Get status badge component
+  const getStatusBadge = () => {
+    if (eventStatus.is_past) {
+      return <span className="badge bg-secondary">Past</span>;
+    } else if (eventStatus.is_present) {
+      return <span className="badge bg-success">Ongoing</span>;
+    } else if (eventStatus.is_upcoming) {
+      return <span className="badge bg-primary">Upcoming</span>;
+    }
+    return <span className="badge bg-secondary">Not Set</span>;
   };
 
   return (
@@ -258,6 +331,33 @@ const AddEvent = () => {
                         </Form.Text>
                       </Form.Group>
                     </Col>
+
+                    {/* Event Type */}
+                    <Col md={6} className="mb-3">
+                      <Form.Group>
+                        <Form.Label className="d-flex align-items-center">
+                          <FaInfoCircle className="me-2 text-info" />
+                          Event Type
+                        </Form.Label>
+                        <Form.Select
+                          name="event_type"
+                          value={formData.event_type}
+                          onChange={handleChange}
+                          className="form-control-lg"
+                        >
+                          <option value="">Select event type (optional)</option>
+                          <option value="conference">Conference</option>
+                          <option value="workshop">Workshop</option>
+                          <option value="seminar">Seminar</option>
+                          <option value="webinar">Webinar</option>
+                          <option value="networking">Networking</option>
+                          <option value="other">Other</option>
+                        </Form.Select>
+                        <Form.Text className="text-muted">
+                          Select the type of event (optional)
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
                   </Row>
 
                   {/* Description */}
@@ -288,12 +388,30 @@ const AddEvent = () => {
                     </Col>
                   </Row>
 
+                  {/* Event Status */}
+                  <Row>
+                    <Col md={12} className="mb-4">
+                      <Form.Group>
+                        <Form.Label className="d-flex align-items-center">
+                          <FaInfoCircle className="me-2 text-warning" />
+                          Event Status
+                        </Form.Label>
+                        <div className="d-flex align-items-center">
+                          {getStatusBadge()}
+                          <Form.Text className="text-muted ms-2">
+                            Automatically calculated based on the event date and time
+                          </Form.Text>
+                        </div>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
                   {/* Form Actions */}
                   <div className="d-flex justify-content-end gap-2">
                     <Button
                       variant="secondary"
                       size="lg"
-                      onClick={() => navigate('/events')}
+                      onClick={() => navigate('/ManageEvent')}
                       disabled={loading}
                     >
                       Cancel
@@ -333,6 +451,8 @@ const AddEvent = () => {
                     <Col md={6}>
                       <p><strong>Name:</strong> {formData.event_name || 'Not specified'}</p>
                       <p><strong>Venue:</strong> {formData.venue || 'Not specified'}</p>
+                      <p><strong>Type:</strong> {formData.event_type ? formData.event_type.charAt(0).toUpperCase() + formData.event_type.slice(1) : 'Not specified'}</p>
+                      <p><strong>Status:</strong> {getStatusBadge()}</p>
                     </Col>
                     <Col md={6}>
                       <p><strong>Date & Time:</strong> {formData.event_date_time ? 
