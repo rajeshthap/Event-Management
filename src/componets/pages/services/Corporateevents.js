@@ -99,7 +99,7 @@ const getImageUrl = () => {
   return (
     <div>
         <Container className='box-shadow'>
-      <section id="corporate-events" className="about section">
+      <section id="corporate-events" className="about section-gallery">
         <div className="container" data-aos="fade-up" data-aos-delay="100">
           <div className="row align-items-start g-5">
             {/* Left Content Column */}
@@ -116,7 +116,7 @@ const getImageUrl = () => {
                   {serviceItems.map((item, index) => (
                     <div className="service-item" key={index}>
                       <div className="service-icon">
-                        <i className="bi bi-check-circle-fill"></i>
+                        
                       </div>
                       <div className="service-content">
                         {item.title && <h4>{item.title}</h4>}

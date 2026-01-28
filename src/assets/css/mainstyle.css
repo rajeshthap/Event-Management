@@ -709,8 +709,21 @@ section,
   scroll-margin-top: 90px;
   overflow: clip;
 }
+.container-box-title h2{
+  color: #010608;
+  font-weight: 700;
+}
 
-
+.features-list h4{
+  color: #010608;
+  font-weight: 700;
+}
+.container-box-title p{
+  text-align: justify;
+}
+.container-box-title ul li{
+  text-align:justify ;
+}
 @media (max-width: 1199px) {
 
   section,
@@ -1185,6 +1198,7 @@ section,
 
 .about .about-content p {
   margin-bottom: 30px;
+  text-align: justify;
 }
 
 .about .about-content .timeline {

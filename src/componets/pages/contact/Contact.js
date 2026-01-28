@@ -138,13 +138,8 @@ function Contact() {
   };
 
   return (
-    <Container fluid className="py-5 contact-page">
-      <Row className="justify-content-center">
-        <Col xs={12} className="text-center mb-4">
-          <h1 className="page-title">Contact Us</h1>
-          <p className="page-subtitle">We'd love to hear from you. Get in touch with us.</p>
-        </Col>
-      </Row>
+    <Container className="py-5 box-shadow">
+     
       
       <Row className="justify-content-center">
         {/* Company Details Section */}

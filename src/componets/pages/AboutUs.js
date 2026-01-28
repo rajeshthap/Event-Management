@@ -158,7 +158,7 @@ function AboutUs() {
                       <div className="timeline-item" key={index}>
                         <div className="timeline-dot"></div>
                         <div className="timeline-content">
-                          <h4>{item.title}</h4>
+                          <h3>{item.title}</h3>
                           <p>{item.description}</p>
                         </div>
                       </div>

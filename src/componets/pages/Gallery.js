@@ -57,11 +57,13 @@ function Gallery() {
   };
 
   return (
+    <>
+    <div class="gallery-banner"><div class="site-breadcrumb-wpr"><h2 class="breadcrumb-title">Our Gallery</h2><ul class="breadcrumb-menu clearfix "type="none"><li><a class="breadcrumb-home" href="/" data-discover="true">Home</a></li><li class="px-2">/</li><li><a class="breadcrumb-about" href="/" data-discover="true">Gallery</a></li></ul></div></div>
     <Container className='box-shadow'>
       <main className="main">
        
 
-        <section id="gallery" className="gallery section">
+        <section id="gallery" className="gallery section-gallery">
           <div className="container" data-aos="fade-up" data-aos-delay="100">
             {loading ? (
               <div className="text-center py-5">
@@ -118,6 +120,7 @@ function Gallery() {
         </section>
       </main>
     </Container>
+    </>
   );
 }
 

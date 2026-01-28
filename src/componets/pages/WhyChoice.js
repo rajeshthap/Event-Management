@@ -149,7 +149,7 @@ function WhyChoice() {
   return (
     <div className='mt-4'>
       <section id="about" className="about section">
-        <div className="container" data-aos="fade-up" data-aos-delay="100">
+        <div className="container container-box-title" data-aos="fade-up" data-aos-delay="100">
            
                 <h2>{aboutData ? aboutData.title : "Educating Minds, Inspiring Hearts"}</h2>
                 <p>

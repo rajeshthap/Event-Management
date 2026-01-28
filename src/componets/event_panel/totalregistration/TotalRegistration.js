@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Form, Button, Alert, Card, Spinner, Badge, Table, Image, Pagination, InputGroup } from "react-bootstrap";
+import { Container, Table, Button, Badge, Form, Modal, Spinner, Alert } from "react-bootstrap";
 import "../../../assets/css/dashboard.css";
 import { useNavigate } from "react-router-dom";
 import { useAuthFetch } from "../../context/AuthFetch";
@@ -14,13 +14,10 @@ import {
   FaImage, FaLink, FaCertificate, FaBuilding, FaUserTie, FaGlobe, FaCity, FaInfo, FaEye as FaViewIcon,
   FaGraduationCap, FaTheaterMasks, FaMusic, FaPalette, FaCamera, FaMicrophone, FaBook, FaGamepad,
   FaFilm, FaCode, FaLaptopCode, FaDesktop, FaPencilRuler, FaBullhorn, FaHandshake,
-  FaFilePdf, FaFileExcel, FaSearch
+  FaFilePdf, FaFileExcel, FaSearch, FaDownload
 } from "react-icons/fa";
 import LeftNav from "../LeftNav";
 import DashBoardHeader from "../DashBoardHeader";
-import jsPDF from "jspdf";
-import { autoTable } from "jspdf-autotable";
-import * as XLSX from "xlsx";
 
 const TotalRegistration = () => {
   const { auth, logout, refreshAccessToken, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -38,7 +35,6 @@ const TotalRegistration = () => {
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [showTable, setShowTable] = useState(false);
 
   // Submission state
   const [message, setMessage] = useState("");
@@ -48,9 +44,9 @@ const TotalRegistration = () => {
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
   // Base URL for API
   const API_BASE_URL = "https://mahadevaaya.com/eventmanagement/eventmanagement_backend";
@@ -251,193 +247,141 @@ const TotalRegistration = () => {
       });
       setFilteredEntries(filtered);
     }
-    // Reset to first page when search changes
-    setCurrentPage(1);
   }, [searchQuery, entries]);
 
-  // Pagination calculations
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredEntries.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-  
-  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+  // Function to format date and time
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
 
-  // Function to download data as PDF
-  const downloadPDF = () => {
-    const doc = new jsPDF('l'); // Use landscape orientation for better fit
-    doc.setFontSize(18);
-    doc.text("Registration Data", 14, 22);
+  // Function to handle view registration details
+  const handleViewEntry = (entry) => {
+    setSelectedEntry(entry);
+    setShowModal(true);
+  };
+
+  // Function to export data to PDF
+  const exportToPDF = () => {
+    // Create a temporary table element for printing
+    const printWindow = window.open('', '_blank');
     
-    // Add date
-    doc.setFontSize(11);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Prepare table data with all fields
-    const tableData = filteredEntries.map(entry => [
-      entry.full_name || '',
-      entry.user_type || '',
-      entry.phone || '',
-      entry.email || '',
-      entry.gender || '',
-      entry.address || '',
-      entry.city || '',
-      entry.state || '',
-      entry.country || '',
-      entry.team_name || '',
-      Array.isArray(entry.talent_scope) ? entry.talent_scope.join(', ') : entry.talent_scope || '',
-      entry.introduction || '',
-      entry.formatted_created_date || entry.created_at || ''
-    ]);
-    
-    // Add table using autoTable from jspdf-autotable
-    autoTable(doc, {
-      head: [['Name', 'User Type', 'Phone', 'Email', 'Gender', 'Address', 'City', 'State', 'Country', 'Team', 'Talent Scope', 'Introduction', 'Registration Date']],
-      body: tableData,
-      startY: 40,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [0, 123, 255] },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 20 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 15 },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 20 },
-        7: { cellWidth: 20 },
-        8: { cellWidth: 20 },
-        9: { cellWidth: 20 },
-        10: { cellWidth: 30 },
-        11: { cellWidth: 40 },
-        12: { cellWidth: 25 }
-      }
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
     
-    // Save the PDF
-    doc.save("registration_data.pdf");
+    const printContent = `
+      <html>
+        <head>
+          <title>Registration Data</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+            }
+            .table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+            .table th, .table td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            .table th {
+              background-color: #f2f2f2;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+            }
+            .export-date {
+              text-align: right;
+              font-style: italic;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Registration Data</h1>
+            <div class="export-date">Exported on: ${currentDate}</div>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>User Type</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Gender</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Country</th>
+                <th>Team</th>
+                <th>Registration Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredEntries.map(entry => `
+                <tr>
+                  <td>${entry.id || entry.user_id}</td>
+                  <td>${entry.full_name || 'N/A'}</td>
+                  <td>${entry.user_type || 'N/A'}</td>
+                  <td>${entry.phone || 'N/A'}</td>
+                  <td>${entry.email || 'N/A'}</td>
+                  <td>${entry.gender || 'N/A'}</td>
+                  <td>${entry.city || 'N/A'}</td>
+                  <td>${entry.state || 'N/A'}</td>
+                  <td>${entry.country || 'N/A'}</td>
+                  <td>${entry.team_name || 'N/A'}</td>
+                  <td>${formatDateTime(entry.created_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
-  // Function to download data as Excel
-  const downloadExcel = () => {
-    // Prepare data for Excel with all fields
-    const excelData = filteredEntries.map(entry => ({
-      'Full Name': entry.full_name || '',
-      'User Type': entry.user_type || '',
-      'Phone': entry.phone || '',
-      'Email': entry.email || '',
-      'Gender': entry.gender || '',
-      'Address': entry.address || '',
-      'City': entry.city || '',
-      'State': entry.state || '',
-      'Country': entry.country || '',
-      'Team Name': entry.team_name || '',
-      'Talent Scope': entry.talent_scope ? entry.talent_scope.join(', ') : '',
-      'Introduction': entry.introduction || '',
-      'Registration Date': entry.formatted_created_date || entry.created_at || ''
-    }));
+  // Function to export data to Excel (CSV)
+  const exportToExcel = () => {
+    const headers = ['ID', 'Full Name', 'User Type', 'Phone', 'Email', 'Gender', 'City', 'State', 'Country', 'Team', 'Registration Date'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredEntries.map(entry => [
+        entry.id || entry.user_id,
+        entry.full_name || 'N/A',
+        entry.user_type || 'N/A',
+        entry.phone || 'N/A',
+        entry.email || 'N/A',
+        entry.gender || 'N/A',
+        entry.city || 'N/A',
+        entry.state || 'N/A',
+        entry.country || 'N/A',
+        entry.team_name || 'N/A',
+        formatDateTime(entry.created_at)
+      ].join(','))
+    ].join('\n');
     
-    // Create a new workbook
-    const workbook = XLSX.utils.book_new();
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
     
-    // Convert data to worksheet
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
-    
-    // Generate Excel file and download
-    XLSX.writeFile(workbook, "registration_data.xlsx");
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `registration_data_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
-
-  // Function to render mobile card view with all fields
-  const renderMobileCard = (entry, index) => (
-    <Card key={entry.id || entry.user_id} className="mb-3">
-      <Card.Body>
-        <div className="d-flex align-items-center mb-3">
-          <div className="consultation-avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-            {entry.profile_image ? (
-              <Image 
-                src={`${API_BASE_URL}${entry.profile_image}`} 
-                alt={entry.full_name}
-                className="rounded-circle"
-                width="40"
-                height="40"
-              />
-            ) : (
-              entry.full_name ? entry.full_name.charAt(0).toUpperCase() : 'U'
-            )}
-          </div>
-          <div className="flex-grow-1">
-            <h5 className="mb-0">{entry.full_name}</h5>
-            <Badge bg={getUserTypeBadgeColor(entry.user_type)} className="py-1 px-2">
-              <span className="me-1">{getUserTypeIcon(entry.user_type)}</span>
-              {entry.user_type}
-            </Badge>
-          </div>
-        </div>
-        <div className="row">
-          <div className="col-6 mb-2">
-            <small className="text-muted d-block">#</small>
-            <span>{indexOfFirstItem + index + 1}</span>
-          </div>
-          <div className="col-6 mb-2">
-            <small className="text-muted d-block">Phone</small>
-            <span>{entry.phone}</span>
-          </div>
-          <div className="col-12 mb-2">
-            <small className="text-muted d-block">Email</small>
-            <span className="text-truncate d-block">{entry.email}</span>
-          </div>
-          <div className="col-6 mb-2">
-            <small className="text-muted d-block">Gender</small>
-            <span>{entry.gender}</span>
-          </div>
-          <div className="col-6 mb-2">
-            <small className="text-muted d-block">Team</small>
-            <span>{entry.team_name || 'N/A'}</span>
-          </div>
-          <div className="col-12 mb-2">
-            <small className="text-muted d-block">Address</small>
-            <span>{entry.address || 'N/A'}</span>
-          </div>
-          <div className="col-4 mb-2">
-            <small className="text-muted d-block">City</small>
-            <span>{entry.city}</span>
-          </div>
-          <div className="col-4 mb-2">
-            <small className="text-muted d-block">State</small>
-            <span>{entry.state}</span>
-          </div>
-          <div className="col-4 mb-2">
-            <small className="text-muted d-block">Country</small>
-            <span>{entry.country}</span>
-          </div>
-          <div className="col-12 mb-2">
-            <small className="text-muted d-block">Talent Scope</small>
-            <div className="d-flex flex-wrap gap-1 mt-1">
-              {entry.talent_scope && entry.talent_scope.length > 0 ? 
-                entry.talent_scope.map((talent, index) => (
-                  <Badge key={index} bg="secondary" className="py-1 px-2">
-                    {talent}
-                  </Badge>
-                )) : 
-                <span>Not specified</span>
-              }
-            </div>
-          </div>
-          <div className="col-12 mb-2">
-            <small className="text-muted d-block">Introduction</small>
-            <p className="mb-0 mt-1">{entry.introduction || 'No introduction provided.'}</p>
-          </div>
-          <div className="col-12">
-            <small className="text-muted d-block">Registration Date</small>
-            <span>{entry.formatted_created_date || entry.created_at}</span>
-          </div>
-        </div>
-      </Card.Body>
-    </Card>
-  );
 
   // Show loading spinner while auth is loading
   if (authLoading) {
@@ -487,6 +431,18 @@ const TotalRegistration = () => {
           <DashBoardHeader toggleSidebar={toggleSidebar} />
 
           <Container fluid className="dashboard-body dashboard-main-container">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h1 className="page-title">Total Registrations</h1>
+              <div>
+                <Button variant="outline-primary" onClick={exportToPDF} className="me-2">
+                  <FaDownload className="me-1" /> Export PDF
+                </Button>
+                <Button variant="outline-success" onClick={exportToExcel} className="me-2">
+                  <FaDownload className="me-1" /> Export Excel
+                </Button>
+              </div>
+            </div>
+
             {/* Alert for success/error messages */}
             {showAlert && (
               <Alert
@@ -498,216 +454,173 @@ const TotalRegistration = () => {
                 {message}
               </Alert>
             )}
+            
+            {/* Search Control */}
+            <div className="mb-4">
+              <Form.Control
+                type="text"
+                placeholder="Search by name, type, email, city..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-50"
+              />
+            </div>
 
-            {/* Registration Count Card */}
             {isLoading ? (
-              <div className="text-center my-5">
-                <Spinner animation="border" role="status">
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
                   <span className="visually-hidden">Loading...</span>
-                </Spinner>
+                </div>
+                <p className="mt-3">Loading registration data...</p>
               </div>
             ) : (
-              <>
-                <Row className="mb-4">
-                  <Col md={6} lg={4}>
-                    <Card 
-                      className="h-100 shadow-sm card-hover cursor-pointer" 
-                      onClick={() => setShowTable(!showTable)}
-                    >
-                      <Card.Body className="d-flex flex-row align-items-center justify-content-between p-3">
-                        <div className="d-flex align-items-center">
-                          <FaUsers className="text-success me-3" size={36} />
-                          <div>
-                            <p className="mb-0">Total Registrations</p>
-                          </div>
-                        </div>
-                        <div className="text-end">
-                          <h2 className="display-4 fw-bold text-success">{entries.length}</h2>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* Registration Entries Table */}
-                {showTable && (
-                  <>
-                    {isFetching && (
-                      <div className="d-flex justify-content-center mb-3">
-                        <Spinner animation="border" size="sm" role="status">
-                          <span className="visually-hidden">Refreshing...</span>
-                        </Spinner>
-                      </div>
-                    )}
-                    
-                    {/* Search and Download Controls */}
-                    <Row className="mb-3">
-                      <Col md={6}>
-                        <InputGroup>
-                          <InputGroup.Text>
-                            <FaSearch />
-                          </InputGroup.Text>
-                          <Form.Control
-                            type="text"
-                            placeholder="Search by name, type, email, city..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                          />
-                        </InputGroup>
-                      </Col>
-                      <Col md={6} className="text-md-end mt-2 mt-md-0">
-                        <Button 
-                          variant="danger" 
-                          className="me-2"
-                          onClick={downloadPDF}
-                          disabled={filteredEntries.length === 0}
-                        >
-                          <FaFilePdf className="me-1" /> Download PDF
-                        </Button>
-                        <Button 
-                          variant="success" 
-                          onClick={downloadExcel}
-                          disabled={filteredEntries.length === 0}
-                        >
-                          <FaFileExcel className="me-1" /> Download Excel
-                        </Button>
-                      </Col>
-                    </Row>
-                    
-                    {filteredEntries.length === 0 ? (
-                      <div className="text-center my-5">
-                        <p>{searchQuery ? "No matching registration entries found." : "No registration entries found."}</p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Desktop Table View with all fields */}
-                        {!isMobile && (
-                          <div className="table-responsive" style={{ overflowX: 'auto' }}>
-                            <Table striped bordered hover className="align-middle">
-                              <thead>
-                                <tr>
-                                  <th>#</th>
-                                  <th>Profile</th>
-                                  <th>Full Name</th>
-                                  <th>User Type</th>
-                                  <th>Phone</th>
-                                  <th>Email</th>
-                                  <th>Gender</th>
-                                  <th>Address</th>
-                                  <th>City</th>
-                                  <th>State</th>
-                                  <th>Country</th>
-                                  <th>Team</th>
-                                  <th>Talent Scope</th>
-                                  <th>Introduction</th>
-                                  <th>Registration Date</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {currentItems.map((entry, index) => (
-                                  <tr key={entry.id || entry.user_id}>
-                                    <td>{indexOfFirstItem + index + 1}</td>
-                                    <td>
-                                      <div className="consultation-avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
-                                        {entry.profile_image ? (
-                                          <Image 
-                                            src={`${API_BASE_URL}${entry.profile_image}`} 
-                                            alt={entry.full_name}
-                                            className="rounded-circle"
-                                            width="40"
-                                            height="40"
-                                          />
-                                        ) : (
-                                          entry.full_name ? entry.full_name.charAt(0).toUpperCase() : 'U'
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td>{entry.full_name}</td>
-                                    <td>
-                                      <Badge bg={getUserTypeBadgeColor(entry.user_type)} className="py-1 px-2">
-                                        <span className="me-1">{getUserTypeIcon(entry.user_type)}</span>
-                                        {entry.user_type}
-                                      </Badge>
-                                    </td>
-                                    <td>{entry.phone}</td>
-                                    <td>{entry.email}</td>
-                                    <td>{entry.gender}</td>
-                                    <td>{entry.address || 'N/A'}</td>
-                                    <td>{entry.city}</td>
-                                    <td>{entry.state}</td>
-                                    <td>{entry.country}</td>
-                                    <td>{entry.team_name || 'N/A'}</td>
-                                    <td>
-                                      <div className="d-flex flex-wrap gap-1">
-                                        {entry.talent_scope && entry.talent_scope.length > 0 ? 
-                                          entry.talent_scope.map((talent, index) => (
-                                            <Badge key={index} bg="secondary" className="py-1 px-2">
-                                              {talent}
-                                            </Badge>
-                                          )) : 
-                                          <span>Not specified</span>
-                                        }
-                                      </div>
-                                    </td>
-                                    <td>
-                                      <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {entry.introduction || 'No introduction provided.'}
-                                      </div>
-                                    </td>
-                                    <td>{entry.formatted_created_date || entry.created_at}</td>
-                                  </tr>
-                                ))}
-                                {currentItems.length > 0 && (
-                                  <tr className="table-primary fw-bold">
-                                    <td colSpan={3}>Total</td>
-                                    <td colSpan={12}>{filteredEntries.length} Registrations</td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </Table>
-                          </div>
-                        )}
-
-                        {/* Mobile Card View */}
-                        {isMobile && (
-                          <div>
-                            {currentItems.map((entry, index) => renderMobileCard(entry, index))}
-                          </div>
-                        )}
-                        
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                          <div className="d-flex justify-content-center mt-4">
-                            <Pagination>
-                              <Pagination.Prev 
-                                onClick={() => handlePageChange(currentPage - 1)} 
-                                disabled={currentPage === 1}
-                              />
-                              {[...Array(totalPages).keys()].map(page => (
-                                <Pagination.Item 
-                                  key={page + 1} 
-                                  active={page + 1 === currentPage}
-                                  onClick={() => handlePageChange(page + 1)}
-                                >
-                                  {page + 1}
-                                </Pagination.Item>
-                              ))}
-                              <Pagination.Next 
-                                onClick={() => handlePageChange(currentPage + 1)} 
-                                disabled={currentPage === totalPages}
-                              />
-                            </Pagination>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </>
+              <Table striped bordered hover responsive>
+                <thead className="table-th">
+                  <tr>
+                    <th>#</th>
+                    <th>Full Name</th>
+                    <th>User Type</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>City</th>
+                    <th>Registration Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEntries.length > 0 ? (
+                    filteredEntries.map((entry, index) => (
+                      <tr key={entry.id || entry.user_id}>
+                        <td>{index + 1}</td>
+                        <td>{entry.full_name || 'N/A'}</td>
+                        <td>
+                          <Badge bg={getUserTypeBadgeColor(entry.user_type)} className="py-1 px-2">
+                            <span className="me-1">{getUserTypeIcon(entry.user_type)}</span>
+                            {entry.user_type || 'N/A'}
+                          </Badge>
+                        </td>
+                        <td>{entry.phone || 'N/A'}</td>
+                        <td>{entry.email || 'N/A'}</td>
+                        <td>{entry.city || 'N/A'}</td>
+                        <td>{formatDateTime(entry.created_at)}</td>
+                        <td>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleViewEntry(entry)}
+                            className="me-2"
+                          >
+                            <FaViewIcon />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="text-center">
+                        {searchQuery ? "No matching registration entries found." : "No registration entries found."}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
             )}
           </Container>
         </div>
       </div>
+
+      {/* Registration Details Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Registration Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedEntry && (
+            <div>
+              <Table striped bordered>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Registration ID:</td>
+                    <td>{selectedEntry.id || selectedEntry.user_id}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Full Name:</td>
+                    <td>{selectedEntry.full_name || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>User Type:</td>
+                    <td>
+                      <Badge bg={getUserTypeBadgeColor(selectedEntry.user_type)} className="py-1 px-2">
+                        <span className="me-1">{getUserTypeIcon(selectedEntry.user_type)}</span>
+                        {selectedEntry.user_type || 'N/A'}
+                      </Badge>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Phone:</td>
+                    <td>{selectedEntry.phone || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Email:</td>
+                    <td>{selectedEntry.email || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Gender:</td>
+                    <td>{selectedEntry.gender || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Address:</td>
+                    <td>{selectedEntry.address || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>City:</td>
+                    <td>{selectedEntry.city || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>State:</td>
+                    <td>{selectedEntry.state || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Country:</td>
+                    <td>{selectedEntry.country || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Team Name:</td>
+                    <td>{selectedEntry.team_name || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Talent Scope:</td>
+                    <td>
+                      {selectedEntry.talent_scope && selectedEntry.talent_scope.length > 0 ? 
+                        selectedEntry.talent_scope.map((talent, index) => (
+                          <Badge key={index} bg="secondary" className="py-1 px-2 me-1">
+                            {talent}
+                          </Badge>
+                        )) : 
+                        'Not specified'
+                      }
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Introduction:</td>
+                    <td style={{ whiteSpace: 'pre-wrap' }}>{selectedEntry.introduction || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', width: '30%' }}>Registration Date:</td>
+                    <td>{formatDateTime(selectedEntry.created_at)}</td>
+                  </tr>
+                  {selectedEntry.updated_at && (
+                    <tr>
+                      <td style={{ fontWeight: 'bold', width: '30%' }}>Last Updated:</td>
+                      <td>{formatDateTime(selectedEntry.updated_at)}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
     </>
   );
 };

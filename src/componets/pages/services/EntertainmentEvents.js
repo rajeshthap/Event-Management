@@ -101,7 +101,7 @@ function EntertainmentEvents() {
   return (
     <div>
         <Container className='box-shadow'>
-      <section id="entertainment-events" className="about section">
+      <section id="entertainment-events" className="about section-gallery">
         <div className="container" data-aos="fade-up" data-aos-delay="100">
           <div className="row align-items-start g-5">
             {/* Left Content Column */}
@@ -124,7 +124,7 @@ function EntertainmentEvents() {
                   {serviceItems.map((item, index) => (
                     <div className="service-item" key={index}>
                       <div className="service-icon">
-                        <i className="bi bi-check-circle-fill"></i>
+                        <i className=""></i>
                       </div>
                      
                       <div className="service-content">

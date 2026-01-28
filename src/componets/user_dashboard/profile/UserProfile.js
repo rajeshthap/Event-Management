@@ -488,7 +488,7 @@ const UserProfile = () => {
 
           <div className="row">
             {/* Profile Sidebar */}
-            <Col lg={4} className="mb-4">
+            <Col lg={2} className="mb-4">
               <Card className="profile-sidebar">
                 <Card.Body>
                   <div className="text-center">
@@ -520,39 +520,28 @@ const UserProfile = () => {
                     <h3 className="profile-name">
                       {userData?.full_name || 'User'}
                     </h3>
-                    <p className="profile-email">{userData?.email || 'email@example.com'}</p>
-                    <p className="profile-phone">{userData?.mobile || 'Phone number'}</p>
+                    {/* <p className="profile-email">{userData?.email || 'email@example.com'}</p> */}
+                  
                     <Badge bg="primary" className="profile-role">
                       {userData?.role || 'User'}
                     </Badge>
                   </div>
 
-                  <div className="profile-stats mt-4">
-                    <div className="d-flex justify-content-around">
-                      <div className="stat-item text-center">
-                        <div className="stat-value">0</div>
-                        <div className="stat-label">Events</div>
-                      </div>
-                      <div className="stat-item text-center">
-                        <div className="stat-value">0</div>
-                        <div className="stat-label">Followers</div>
-                      </div>
-                      <div className="stat-item text-center">
-                        <div className="stat-value">0</div>
-                        <div className="stat-label">Following</div>
-                      </div>
-                    </div>
-                  </div>
+              
                 </Card.Body>
               </Card>
             </Col>
 
             {/* Profile Content */}
-            <Col lg={8} className="mb-4">
+            <Col lg={10} className="mb-4">
               <Card className="profile-content">
                 <Card.Body>
                   <Tabs defaultActiveKey="personal" id="profile-tabs">
-                    <Tab eventKey="personal" title="Personal Information">
+                    <Tab eventKey="personal" title={
+                      <span className="tab-style">
+                        Personal Information
+                      </span>
+                    }>
                       <Form onSubmit={handleSaveProfile}>
                         <Form.Group controlId="formFullName" className="mb-3">
                           <Form.Label>Full Name</Form.Label>
@@ -641,7 +630,13 @@ const UserProfile = () => {
                       </Form>
                     </Tab>
 
-                    <Tab eventKey="contact" title="Contact Information">
+                    <Tab eventKey="contact" title={
+    <span className="tab-style"
+     
+    >
+      Contact Information
+    </span>
+  }>
                       <Form onSubmit={handleSaveProfile}>
                         <Form.Group controlId="formAddress" className="mb-3">
                           <Form.Label>Address</Form.Label>
@@ -695,7 +690,11 @@ const UserProfile = () => {
                       </Form>
                     </Tab>
 
-                    <Tab eventKey="professional" title="Professional Information">
+                    <Tab eventKey="professional" title={
+                      <span className="tab-style">
+                        Professional Information
+                      </span>
+                    }>
                       <Form onSubmit={handleSaveProfile}>
                         <Form.Group controlId="formIntroduction" className="mb-3">
                           <Form.Label>Introduction</Form.Label>
@@ -753,7 +752,11 @@ const UserProfile = () => {
                       </Form>
                     </Tab>
 
-                    <Tab eventKey="social" title="Social Media">
+                    <Tab eventKey="social" title={
+                      <span className="tab-style">
+                        Social Media
+                      </span>
+                    }>
                       <Form onSubmit={handleSaveProfile}>
                         <Form.Group controlId="formSocialMediaLinks" className="mb-3">
                           <Form.Label>Social Media Links</Form.Label>
@@ -892,7 +895,11 @@ const UserProfile = () => {
                       </Form>
                     </Tab>
 
-                    <Tab eventKey="documents" title="Documents & Certificates">
+                    <Tab eventKey="documents" title={
+                      <span className="tab-style">
+                        Documents & Certificates
+                      </span>
+                    }>
                       <div className="mb-3">
                         {isEditMode ? (
                           <div>

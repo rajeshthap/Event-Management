@@ -1,86 +1,132 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
+import "../../assets/css/mainstyle.css";
+import { Link } from 'react-router-dom';
+import EventLogo from '../../assets/images/br-event-logo.png';
+import { FaPhone, FaFacebook, FaTwitter, FaWhatsapp, FaInstagram, FaLinkedin, FaGlobe, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 
 function Footer() {
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    const fetchCompanyDetails = async () => {
+      try {
+        const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/company-detail-item/');
+        const data = await response.json();
+        
+        if (data.success) {
+          setCompanies(data.data);
+        } else {
+          setError('Failed to fetch company details');
+        }
+      } catch (err) {
+        setError('Error fetching company details: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyDetails();
+  }, []);
+
+  // Function to determine which icon to use based on URL
+  const getSocialIcon = (url) => {
+    if (!url) return null;
+    
+    const lowerUrl = url.toLowerCase();
+    
+    if (lowerUrl.includes('facebook.com')) {
+      return <FaFacebook className="social-icon facebook-icon" />;
+    } else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
+      return <FaTwitter className="social-icon twitter-icon" />;
+    } else if (lowerUrl.includes('whatsapp.com')) {
+      return <FaWhatsapp className="social-icon whatsapp-icon" />;
+    } else if (lowerUrl.includes('instagram.com')) {
+      return <FaInstagram className="social-icon instagram-icon" />;
+    } else if (lowerUrl.includes('linkedin.com')) {
+      return <FaLinkedin className="social-icon linkedin-icon" />;
+    } else {
+      return <FaGlobe className="social-icon website-icon" />;
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-4">Loading footer...</div>;
+  }
+
+  if (error) {
+    return <div className="alert alert-danger">{error}</div>;
+  }
+
   return (
-    <div>  <footer id="footer" class="footer position-relative light-background">
+    <footer id="footer" className="footer position-relative light-background">
+      <div className="container footer-top">
+        <div className="row gy-4">
+          {companies.map((company) => (
+            <React.Fragment key={company.id}>
+              <div className="col-lg-5 col-md-6 footer-about">
+                <Link to="/" className="logo d-flex align-items-center">
+                  <img src={EventLogo} alt="logo" className="logo-wecd me-2" />
+                  <span className="sitename">Br Events</span>
+                </Link>
+                <p className="mt-3">{company.description || "We create memorable events that exceed expectations. From corporate gatherings to private celebrations, we bring your vision to life."}</p>
+                <div className="footer-contact pt-3">
+                  <p><strong>Address:</strong> <span>{company.address || "A108 Adam Street, New York, NY 535022"}</span></p>
+                  <p className="mt-2"><strong>Phone:</strong> <span>{company.phone}</span></p>
+                  <p className="mt-2"><strong>Email:</strong> <span>{company.email}</span></p>
+                </div>
+              
+              </div>
 
-    <div class="container footer-top">
-      <div class="row gy-4">
-        <div class="col-lg-4 col-md-6 footer-about">
-          <a href="index.html" class="logo d-flex align-items-center">
-            <span class="sitename">College</span>
-          </a>
-          <div class="footer-contact pt-3">
-            <p>A108 Adam Street</p>
-            <p>New York, NY 535022</p>
-            <p class="mt-3"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
-            <p><strong>Email:</strong> <span>info@example.com</span></p>
-          </div>
-          <div class="social-links d-flex mt-4">
-            <a href=""><i class="bi bi-twitter-x"></i></a>
-            <a href=""><i class="bi bi-facebook"></i></a>
-            <a href=""><i class="bi bi-instagram"></i></a>
-            <a href=""><i class="bi bi-linkedin"></i></a>
-          </div>
+              <div className="col-lg-3 col-md-3 footer-links">
+                <h4>Useful Links</h4>
+                <ul>
+                  <li><Link to="/">Home</Link></li>
+                  <li><Link to="/AboutUs">About us</Link></li>
+                  <li><Link to="/Events">Events</Link></li>
+                  <li><Link to="/Gallery">Gallery</Link></li>
+                  <li><Link to="/Contact">Contact</Link></li>
+                </ul>
+              </div>
+
+              <div className="col-lg-2 col-md-3 footer-links">
+                <h4>Our Services</h4>
+                <ul>
+                  <li><Link to="/CorporateEvents">Corporate Events</Link></li>
+                  <li><Link to="/EntertainmentEvents">Entertainment Events</Link></li>
+                  <li><Link to="/ConcertEvent">Concert Events</Link></li>
+                  <li><Link to="/PrivateParties">Private Parties</Link></li>
+                  <li><Link to="/Seminar">Seminars</Link></li>
+                </ul>
+              </div>
+
+           
+
+              <div className="col-lg-2 col-md-3 footer-links">
+                <h4>Get In Touch</h4>
+                <div className="social-links d-flex mt-4">
+                  {company.profile_link.map((link, index) => (
+                    <a key={index} href={link} target="_blank" rel="noopener noreferrer" className="me-3">
+                      {getSocialIcon(link)}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </React.Fragment>
+          ))}
         </div>
-
-        <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Useful Links</h4>
-          <ul>
-            <li><a href="#">Home</a></li>
-            <li><a href="#">About us</a></li>
-            <li><a href="#">Services</a></li>
-            <li><a href="#">Terms of service</a></li>
-            <li><a href="#">Privacy policy</a></li>
-          </ul>
-        </div>
-
-        <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Our Services</h4>
-          <ul>
-            <li><a href="#">Web Design</a></li>
-            <li><a href="#">Web Development</a></li>
-            <li><a href="#">Product Management</a></li>
-            <li><a href="#">Marketing</a></li>
-            <li><a href="#">Graphic Design</a></li>
-          </ul>
-        </div>
-
-        <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Hic solutasetp</h4>
-          <ul>
-            <li><a href="#">Molestiae accusamus iure</a></li>
-            <li><a href="#">Excepturi dignissimos</a></li>
-            <li><a href="#">Suscipit distinctio</a></li>
-            <li><a href="#">Dilecta</a></li>
-            <li><a href="#">Sit quas consectetur</a></li>
-          </ul>
-        </div>
-
-        <div class="col-lg-2 col-md-3 footer-links">
-          <h4>Nobis illum</h4>
-          <ul>
-            <li><a href="#">Ipsam</a></li>
-            <li><a href="#">Laudantium dolorum</a></li>
-            <li><a href="#">Dinera</a></li>
-            <li><a href="#">Trodelas</a></li>
-            <li><a href="#">Flexo</a></li>
-          </ul>
-        </div>
-
       </div>
-    </div>
 
-    <div class="container copyright text-center mt-4">
-      <p>© <span>Copyright</span> <strong class="px-1 sitename">MyWebsite</strong> <span>All Rights Reserved</span></p>
-      <div class="credits">
-       
-        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+      <div className="container copyright text-center mt-4">
+        <p>© <span>{currentYear}</span> <strong className="px-1 sitename">Br Events</strong> <span>All Rights Reserved</span></p>
+        <div className="credits">
+          Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+        </div>
       </div>
-    </div>
-
-  </footer></div>
-  )
+    </footer>
+  );
 }
 
-export default Footer
+export default Footer;

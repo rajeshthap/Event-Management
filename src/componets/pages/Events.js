@@ -342,7 +342,7 @@ function Events() {
 
   return (
     <Container className='box-shadow'>
-      <section id="events" className="events section">
+      <section id="events" className="events section-gallery">
         {registrationMessage && (
           <div className="container  mb-4">
           
