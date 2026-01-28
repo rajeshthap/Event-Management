@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import RegistrationModal from './RegistrationModal'; // Import the RegistrationModal component
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Button, Container, Form, Modal } from 'react-bootstrap';
 
 function Events() {
   const [events, setEvents] = useState([]);
@@ -15,6 +15,7 @@ function Events() {
   const [registrationMessage, setRegistrationMessage] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // For filtering events
   const [pendingEventId, setPendingEventId] = useState(null); // Store event ID if registration is pending
+  const [registeredEvents, setRegisteredEvents] = useState([]); // Store events user has registered for
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -28,20 +29,15 @@ function Events() {
           mode: 'cors'
         });
         
-        // Check if response is OK
         if (!response.ok) {
           throw new Error(`Server returned ${response.status}: ${response.statusText}`);
         }
         
-        // Get response text to check if it's HTML
         const responseText = await response.text();
-        
-        // Try to parse as JSON
         let data;
         try {
           data = JSON.parse(responseText);
         } catch (e) {
-          // If parsing fails, it's likely HTML
           console.error('Response is not valid JSON:', responseText.substring(0, 200));
           throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
         }
@@ -62,7 +58,40 @@ function Events() {
     fetchEvents();
   }, []);
 
-  // Function to check if user exists
+  const fetchRegisteredEvents = async (userId) => {
+    try {
+      const response = await fetch(`https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Registered events response is not valid JSON:', responseText.substring(0, 200));
+        return [];
+      }
+
+      if (data.success && Array.isArray(data.data)) {
+        return data.data.map(registration => registration.event_id);
+      }
+      return [];
+    } catch (err) {
+      console.error('Error fetching registered events:', err);
+      return [];
+    }
+  };
+
   const checkUserExists = async (email) => {
     if (!email) {
       setError('Please enter your email address');
@@ -82,9 +111,7 @@ function Events() {
         mode: 'cors'
       });
       
-      // Check if response is OK
       if (!response.ok) {
-        // 404 means user not found, so open registration modal
         if (response.status === 404) {
           setUserId(null);
           return false;
@@ -92,21 +119,19 @@ function Events() {
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
       
-      // Get response text to check if it's HTML
       const responseText = await response.text();
-      
-      // Try to parse as JSON
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        // If parsing fails, it's likely HTML
         console.error('User check response is not valid JSON:', responseText.substring(0, 200));
         throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
       }
       
       if (data.user_id) {
         setUserId(data.user_id);
+        const userRegisteredEvents = await fetchRegisteredEvents(data.user_id);
+        setRegisteredEvents(userRegisteredEvents);
         return true;
       } else {
         setUserId(null);
@@ -121,10 +146,8 @@ function Events() {
     }
   };
 
-  // Function to register user for an event
   const registerForEvent = async (eventId) => {
     if (!userId) {
-      // Show email modal without setting an error message
       setShowEmailModal(true);
       setPendingEventId(eventId);
       return;
@@ -147,22 +170,16 @@ function Events() {
         })
       });
 
-      // Get response text first to check if it's HTML
       const responseText = await response.text();
-      
-      // Try to parse as JSON
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        // If parsing fails, it's likely HTML
         console.error('Registration response is not valid JSON:', responseText.substring(0, 200));
         throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
       }
       
-      // Check if response is OK
       if (!response.ok) {
-        // Try to extract error message from the response
         let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
         if (data.message) {
           errorMessage = data.message;
@@ -174,9 +191,11 @@ function Events() {
         throw new Error(errorMessage);
       }
       
-      // Success
       setRegistrationMessage('Successfully registered for the event!');
       console.log('Registration successful:', data);
+      if (!registeredEvents.includes(eventId)) {
+        setRegisteredEvents(prev => [...prev, eventId]);
+      }
     } catch (err) {
       console.error('Error registering for event:', err);
       setRegistrationMessage('Error registering for event: ' + err.message);
@@ -185,21 +204,15 @@ function Events() {
     }
   };
 
-  // Function to handle the register button click
   const handleRegisterClick = (eventId) => {
-    // Store the event ID for later registration
     setPendingEventId(eventId);
-    
-    // If we already have a user ID, register directly
     if (userId) {
       registerForEvent(eventId);
     } else {
-      // Show email modal to check user
       setShowEmailModal(true);
     }
   };
 
-  // Function to handle email submission
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     
@@ -208,80 +221,78 @@ function Events() {
       return;
     }
 
-    // Check if user exists
     const userExists = await checkUserExists(userEmail);
     
     if (userExists) {
-      // User exists, close email modal and show message
       setShowEmailModal(false);
       setRegistrationMessage('Now you can apply for events');
-      // If there's a pending event registration, complete it
       if (pendingEventId) {
         registerForEvent(pendingEventId);
         setPendingEventId(null);
       }
     } else {
-      // User doesn't exist, close email modal and open registration modal
       setShowEmailModal(false);
       setShowRegistrationModal(true);
     }
   };
 
-  // Function to handle the check button click in the main form
   const handleCheckEmail = async () => {
     const userExists = await checkUserExists(userEmail);
     
     if (userExists) {
-      // User exists, show success message
       setRegistrationMessage('Now you can apply for events');
     } else {
-      // User doesn't exist, show registration modal
       setShowRegistrationModal(true);
     }
   };
 
-  // Function to handle registration success
   const handleRegistrationSuccess = (userData) => {
     setUserEmail(userData.email);
     setUserId(userData.user_id);
     setShowRegistrationModal(false);
     setRegistrationMessage('Now you can apply for events');
     
-    // If there's a pending event registration, complete it
+    fetchRegisteredEvents(userData.user_id).then(userRegisteredEvents => {
+      setRegisteredEvents(userRegisteredEvents);
+    });
+    
     if (pendingEventId) {
       registerForEvent(pendingEventId);
       setPendingEventId(null);
     }
   };
 
-  // Function to format date from ISO string
+  // --- UPDATED: Improved date formatting function ---
   const formatDate = (dateString) => {
+    if (!dateString) return { day: 'N/A', monthYear: 'N/A' };
+    
     const date = new Date(dateString);
-    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    const day = date.getDate();
-    const month = monthNames[date.getMonth()];
-    return { month, day };
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    const formattedDate = date.toLocaleDateString('en-US', options); // e.g., "15 Jan 2024"
+    
+    const parts = formattedDate.split(' ');
+    return {
+      day: parts[0],
+      monthYear: `${parts[1]} ${parts[2]}`
+    };
   };
 
-  // Function to format time from ISO string
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     let hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12;
     const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
     return `${hours}:${formattedMinutes} ${ampm}`;
   };
 
-  // Function to determine badge class based on event type
   const getBadgeClass = (eventType) => {
-    if (!eventType) return 'academic'; // Default class when event_type is null
+    if (!eventType) return 'academic';
     return eventType.toLowerCase();
   };
 
-  // Function to determine status badge and class based on event status
   const getStatusBadge = (event) => {
     if (event.is_past) {
       return { text: 'Past', className: 'past-event' };
@@ -293,7 +304,6 @@ function Events() {
     return { text: 'Unknown', className: 'unknown-event' };
   };
 
-  // Function to filter events based on status
   const filteredEvents = events.filter(event => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'past') return event.is_past;
@@ -331,11 +341,12 @@ function Events() {
   }
 
   return (
-    <div>
+    <Container className='box-shadow'>
       <section id="events" className="events section">
-        {/* Registration Message */}
         {registrationMessage && (
-          <div className="container mb-4">
+          <div className="container  mb-4">
+          
+
             <div className={`alert ${registrationMessage.includes('Successfully') ? 'alert-success' : 'alert-info'}`} role="alert">
               {registrationMessage}
             </div>
@@ -343,19 +354,22 @@ function Events() {
         )}
 
         <div className="container" data-aos="fade-up" data-aos-delay="100">
-          <div className="row g-4">
+          <div className="row section-title g-4">
+              <h2>Events</h2>
             {filteredEvents.map((event, index) => {
-              const { month, day } = formatDate(event.event_date_time);
+              // --- UPDATED: Using the new formatDate function ---
+              const { day, monthYear } = formatDate(event.event_date_time);
               const time = formatTime(event.event_date_time);
               const status = getStatusBadge(event);
-              const aosDelay = 200 + (index % 3) * 100; // Cycle through 200, 300, 400 for animation delays
+              const aosDelay = 200 + (index % 3) * 100;
 
               return (
                 <div key={event.id} className="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay={aosDelay}>
                   <div className={`event-item ${status.className}`}>
                     <div className="event-header">
                       <div className="event-date-overlay">
-                        <span className="date">{month}<br/>{day}</span>
+                        {/* --- UPDATED: Displaying the new date format --- */}
+                        <span className="date">{day}{monthYear}</span>
                       </div>
                       <div className="event-status-badge">
                         <span className={`badge ${status.className}`}>{status.text}</span>
@@ -371,20 +385,26 @@ function Events() {
                       <h3>{event.event_name}</h3>
                       <p>{event.description}</p>
                       <div className="event-info">
+                        {/* --- UPDATED: Added a clear display for the event type --- */}
+                        <div className="info-row">
+                          <i className="bi bi-tag"></i>
+                          <span>Type: {event.event_type || 'General'}</span>
+                        </div>
                         <div className="info-row">
                           <i className="bi bi-geo-alt"></i>
                           <span>{event.venue}</span>
                         </div>
-                      
                       </div>
                       <div className="event-footer">
                         {!event.is_past && (
                           <button 
                             className="register-btn"
                             onClick={() => handleRegisterClick(event.event_id)}
-                            disabled={registeringForEvent === event.event_id}
+                            disabled={registeringForEvent === event.event_id || registeredEvents.includes(event.event_id)}
                           >
-                            {registeringForEvent === event.event_id ? 'Registering...' : 'Register Now'}
+                            {registeredEvents.includes(event.event_id) 
+                              ? 'Already Registered' 
+                              : (registeringForEvent === event.event_id ? 'Registering...' : 'Register Now')}
                           </button>
                         )}
                         {event.is_past && (
@@ -441,7 +461,6 @@ function Events() {
         </div>
       </section>
 
-      {/* Email Modal */}
       <Modal show={showEmailModal} onHide={() => setShowEmailModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Enter Your Email</Modal.Title>
@@ -473,7 +492,6 @@ function Events() {
         </Modal.Body>
       </Modal>
 
-      {/* Registration Modal */}
       <RegistrationModal 
         show={showRegistrationModal} 
         handleClose={() => {
@@ -483,7 +501,7 @@ function Events() {
         onRegistrationSuccess={handleRegistrationSuccess}
         userEmail={userEmail}
       />
-    </div>
+    </Container>
   );
 }
 

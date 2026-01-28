@@ -1,0 +1,9 @@
+.box-shadow{
+    background-color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px #00000014, 0 4px 10px #0000000a;
+    margin-top: 20px;
+    padding: 40px;
+    position: relative;
+    z-index: 2;
+}

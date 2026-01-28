@@ -7,6 +7,7 @@ import Students from './Students'
 import Testimonials from './Testimonials'
 import QualityEducation from './QualityEducation'
 import RecentNews from './RecentNews'
+import WhyChoice from './WhyChoice'
 
 
 function Home() {
@@ -14,11 +15,12 @@ function Home() {
     <div className='main'>
 <Carousel />
 <AboutUs />
-<FeaturedPrograms />
+<WhyChoice />
+{/* <FeaturedPrograms />
 <Students />
-<Testimonials />
-<QualityEducation />
-<RecentNews />
+<Testimonials /> */}
+{/* <QualityEducation /> */}
+{/* <RecentNews /> */}
 <Events />
     </div>
   )

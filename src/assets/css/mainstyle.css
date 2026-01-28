@@ -704,11 +704,12 @@ h6 {
 section,
 .section {
   color: var(--default-color);
-  background-color: var(--background-color);
+  /* background-color: var(--background-color); */
   padding: 60px 0;
   scroll-margin-top: 90px;
   overflow: clip;
 }
+
 
 @media (max-width: 1199px) {
 
@@ -2845,8 +2846,10 @@ section,
 }
 
 .events .event-item .event-details .event-footer .register-btn {
-  background: linear-gradient(135deg, var(--accent-color), color-mix(in srgb, var(--accent-color), #6c5ce7 20%));
+  /* background: linear-gradient(135deg, var(--accent-color), color-mix(in srgb, var(--accent-color), #6c5ce7 20%)); */
   color: var(--contrast-color);
+  background-color: #010608;
+  /* background-color: #FF809F; */
   padding: 0.6rem 1.4rem;
   border-radius: 25px;
   font-weight: 600;

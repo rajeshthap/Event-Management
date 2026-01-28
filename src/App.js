@@ -11,8 +11,6 @@ import {
 } from "react-router-dom";
 
 
-
-
 import Home from "./componets/pages/Home";
 import Footer from "./componets/footer/Footer";
 import NavBar from "./componets/navbar/NavBar";
@@ -35,17 +33,30 @@ import AddAboutUs from "./componets/event_panel/dashboard_pages/AddAboutUs";
 import ManageAboutUs from "./componets/event_panel/dashboard_pages/ManageAboutUs";
 import Events from "./componets/pages/Events";
 import ParticipatedUser from "./componets/event_panel/dashboard_pages/ParticipatedUser";
+import UserProfile from "./componets/user_dashboard/profile/UserProfile";
+import Contact from "./componets/pages/contact/Contact";
+import TotalQuery from "./componets/event_panel/dashboard_pages/TotalQuery";
+import ForgotPassword from "./componets/forgot_password/ForgotPassword";
+import Corporateevents from "./componets/pages/services/Corporateevents";
+import ManageCorporateevents from "./componets/event_panel/dashboard_pages/services_pages/ManageCorporateevents";
+import AddCorporateevents from "./componets/event_panel/dashboard_pages/services_pages/AddCorporateevents";
+import AddEntertainment from "./componets/event_panel/dashboard_pages/services_pages/AddEntertainment";
+import ManageEntertainment from "./componets/event_panel/dashboard_pages/services_pages/ManageEntertainment";
+import EntertainmentEvents from "./componets/pages/services/EntertainmentEvents";
+import AddConcert from "./componets/event_panel/dashboard_pages/services_pages/AddConcert";
+import ManageConcert from "./componets/event_panel/dashboard_pages/services_pages/ManageConcert";
+import ConcertEvent from "./componets/pages/services/ConcertEvent";
+import AddPrivateParties from "./componets/event_panel/dashboard_pages/services_pages/AddPrivateParties";
+import ManageParties from "./componets/event_panel/dashboard_pages/services_pages/ManageParties";
+import AddSeminarsConferences from "./componets/event_panel/dashboard_pages/services_pages/AddSeminarsConferences";
+import ManageSeminarsConferences from "./componets/event_panel/dashboard_pages/services_pages/ManageSeminarsConferences";
+import PrivateParties from "./componets/pages/services/PrivateParties";
+import Seminar from "./componets/pages/services/Seminar";
+import AddGallery from "./componets/event_panel/dashboard_pages/AddGallery";
+import ManageGallery from "./componets/event_panel/dashboard_pages/ManageGallery";
+import Gallery from "./componets/pages/Gallery";
+import ProtectedRoute from "./componets/protected/ProtectedRoute";
 
-
-// import AboutUs from "./componets/pages/AboutUs";
-// import Admissions from "./componets/pages/about_us/Admissions";
-// import Faculty from "./componets/pages/about_us/Faculty";
-// import RegistrationModal from "./componets/pages/RegistrationModal";
-
-
-// import NavBar from "./componets/topnav/NavBar";
-// import Footer from "./componets/footer/Footer";
-// import Dashboard from "./componets/dash_board/Dashboard";
 
 function App() {
 
@@ -63,7 +74,21 @@ function App() {
     "/AddAboutUs",
     "/ManageAboutUs",
     "/UserDashBoard",
-    "/ParticipatedUser"
+    "/ParticipatedUser",
+    "/UserProfile",
+    "/TotalQuery",
+    "/AddCorporateevents",
+    "/ManageCorporateevents",
+    "/AddEntertainment",
+    "/ManageEntertainment",
+    "/ManageConcert",
+    "/AddConcert",
+    "/AddPrivateParties",
+    "/ManageParties",
+    "/ManageSeminarsConferences",
+    "/AddSeminarsConferences",
+    "/AddGallery",
+    "/ManageGallery"
   ]);
 
   const shouldHideNavbar = hiddenPaths.has(location.pathname);
@@ -79,24 +104,151 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/AboutUs" element={<AboutUs />} />
             <Route path="/DashBoardHeader" element={<DashBoardHeader />} />
-            <Route path="/DashBoard" element={<Dashboard />} />
+            <Route path="/Login" element={<Login />} />
             <Route path="/Admissions" element={<Admissions />} />
             <Route path="/Faculty" element={<Faculty />} />
              <Route path="/RegistrationModal" element={<RegistrationModal />} />
-              <Route path="/Login" element={<Login />} />
-              <Route path="/UserDashBoard" element={<UserDashBoard />} />
-              <Route path="/AddHeader" element={<AddHeader />} />
-              <Route path="/ManageHeader" element={<ManageHeader />} />
-               <Route path="/TotalRegistration" element={<TotalRegistration />} />
-               <Route path="/AddEvent" element={<AddEvent />} />
-               <Route path="/ManageEvent" element={<ManageEvent />} />
-               <Route path="/AddCarousel" element={<AddCarousel />} />
-               <Route path="/ManageCarousel" element={<ManageCarousel />} />
-               <Route path="/AddAboutUs" element={<AddAboutUs />} />
-               <Route path="/ManageAboutUs" element={<ManageAboutUs />} />
-               <Route path="/Events" element={<Events />} />
-               <Route path="/ParticipatedUser" element={<ParticipatedUser />} />
-               
+             <Route path="/Events" element={<Events />} />
+             <Route path="/Contact" element={<Contact />} />
+             <Route path="/ForgotPassword" element={<ForgotPassword />} />
+             <Route path="/Corporateevents" element={<Corporateevents />} />
+             <Route path="/EntertainmentEvents" element={<EntertainmentEvents />} />
+             <Route path="/ConcertEvent" element={<ConcertEvent />} />
+             <Route path="/PrivateParties" element={<PrivateParties />} />
+             <Route path="/Seminar" element={<Seminar />} />
+             <Route path="/Gallery" element={<Gallery />} />
+            
+            {/* Protected Routes */}
+            <Route path="/DashBoard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/UserDashBoard" element={
+              <ProtectedRoute>
+                <UserDashBoard />
+              </ProtectedRoute>
+            } />
+            <Route path="/AddHeader" element={
+              <ProtectedRoute>
+                <AddHeader />
+              </ProtectedRoute>
+            } />
+            <Route path="/ManageHeader" element={
+              <ProtectedRoute>
+                <ManageHeader />
+              </ProtectedRoute>
+            } />
+             <Route path="/TotalRegistration" element={
+              <ProtectedRoute>
+                <TotalRegistration />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddEvent" element={
+              <ProtectedRoute>
+                <AddEvent />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageEvent" element={
+              <ProtectedRoute>
+                <ManageEvent />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddCarousel" element={
+              <ProtectedRoute>
+                <AddCarousel />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageCarousel" element={
+              <ProtectedRoute>
+                <ManageCarousel />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddAboutUs" element={
+              <ProtectedRoute>
+                <AddAboutUs />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageAboutUs" element={
+              <ProtectedRoute>
+                <ManageAboutUs />
+              </ProtectedRoute>
+            } />
+             <Route path="/ParticipatedUser" element={
+              <ProtectedRoute>
+                <ParticipatedUser />
+              </ProtectedRoute>
+            } />
+             <Route path="/UserProfile" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
+             <Route path="/TotalQuery" element={
+              <ProtectedRoute>
+                <TotalQuery />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddCorporateevents" element={
+              <ProtectedRoute>
+                <AddCorporateevents />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageCorporateevents" element={
+              <ProtectedRoute>
+                <ManageCorporateevents />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageEntertainment" element={
+              <ProtectedRoute>
+                <ManageEntertainment />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddEntertainment" element={
+              <ProtectedRoute>
+                <AddEntertainment />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddConcert" element={
+              <ProtectedRoute>
+                <AddConcert />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageConcert" element={
+              <ProtectedRoute>
+                <ManageConcert />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddPrivateParties" element={
+              <ProtectedRoute>
+                <AddPrivateParties />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageParties" element={
+              <ProtectedRoute>
+                <ManageParties />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddSeminarsConferences" element={
+              <ProtectedRoute>
+                <AddSeminarsConferences />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageSeminarsConferences" element={
+              <ProtectedRoute>
+                <ManageSeminarsConferences />
+              </ProtectedRoute>
+            } />
+             <Route path="/ManageGallery" element={
+              <ProtectedRoute>
+                <ManageGallery />
+              </ProtectedRoute>
+            } />
+             <Route path="/AddGallery" element={
+              <ProtectedRoute>
+                <AddGallery />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
            {!shouldHideNavbar && <Footer />}

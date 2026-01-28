@@ -284,8 +284,8 @@ const TotalRegistration = () => {
       entry.city || '',
       entry.state || '',
       entry.country || '',
-      entry.team_name || 'N/A',
-      entry.talent_scope ? entry.talent_scope.join(', ') : '',
+      entry.team_name || '',
+      Array.isArray(entry.talent_scope) ? entry.talent_scope.join(', ') : entry.talent_scope || '',
       entry.introduction || '',
       entry.formatted_created_date || entry.created_at || ''
     ]);

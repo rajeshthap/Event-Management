@@ -79,21 +79,15 @@ function NavBar() {
   }
   return (
     <>
-    <div className='nav-start'>
+    <div className='nav-start sticky-top'>
       <div className='top-nav d-flex align-items-center '>
        {companies.map((company) => (
              <Container 
                key={company.id}
-               className='container-fluid container-xl d-flex justify-content-center justify-content-md-between py-3'
+               className='container-fluid container-xl d-flex justify-content-center justify-content-md-between py-1 '
              >
                <div className='d-flex align-items-center'>
-                 <div className="company-logo me-3">
-                   <img 
-                     src={`https://mahadevaaya.com${company.logo}`} 
-                     alt={`${company.company_name} logo`} 
-                     style={{ maxHeight: '40px' }}
-                   />
-                 </div>
+                
                  <div className='d-flex align-items-center'>
                    <div className="d-flex align-items-center me-4">
                      <FaEnvelope className="me-2" />
@@ -127,8 +121,16 @@ function NavBar() {
      
 
       </div>
-      <div className='sticky-top nav-start-sub'>
-        <header id="header" className={`header d-flex align-items-center  ${isMenuOpen ? 'mobile-nav-active' : ''}`}>
+      <div className=' nav-start-sub'>
+        <header
+  id="main-navbar"
+  className={`header d-flex align-items-center ${isMenuOpen ? 'mobile-nav-active' : ''}`}
+  style={{
+    position: "sticky",
+ 
+  }}
+>
+
           <div className="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-end">
 
             <Link to="/" className="logo d-flex align-items-center me-auto">
@@ -140,63 +142,29 @@ function NavBar() {
             <nav id="navmenu" className={`navmenu ${isMenuOpen ? 'navmenu-active' : ''}`}>
               <ul>
                 <li><Link to="/" className="active">Home</Link></li>
+                <li><Link to="/AboutUs" className="active">About Us</Link></li>
 
                 {/* 6. Add onClick to the dropdown trigger */}
                 <li className={`dropdown ${openDropdowns['about'] ? 'dropdown-active' : ''}`}>
                   <Link to="#about" onClick={(e) => { e.preventDefault(); toggleDropdown('about'); }}>
-                    <span>About</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['about'] ? 'rotate-icon' : ''}`}></i>
+                    <span>Services</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['about'] ? 'rotate-icon' : ''}`}></i>
                   </Link>
                   <ul>
-                    <li><Link to="/AboutUs">About Us</Link></li>
-                    <li><Link to="/Admissions">Admissions</Link></li>
-                    <li><Link to="academics.html">Academics</Link></li>
-                    <li><Link to="/Faculty">Faculty &amp; Staff</Link></li>
-                    <li><Link to="campus-facilities.html">Campus &amp; Facilities</Link></li>
+                    <li><Link to="/CorporateEvents ">Corporate events </Link></li>
+                    <li><Link to="/EntertainmentEvents">Entertainment Events </Link></li>
+                    <li><Link to="/ConcertEvent">Concert events</Link></li>
+                    <li><Link to="/PrivateParties">Private Parties</Link></li>
+                    <li><Link to="/Seminar">Seminar</Link></li>
                   </ul>
                 </li>
 
-                <li><Link to="students-life.html">Schedules</Link></li>
+               
                 <li><Link to="/Events">Events</Link></li>
-                <li><Link to="alumni.html">Gallery</Link></li>
+                <li><Link to="/Gallery">Gallery</Link></li>
+ <li><Link to="/Contact">Contact</Link></li>
+                
 
-                <li className={`dropdown ${openDropdowns['sponsors'] ? 'dropdown-active' : ''}`}>
-                  <Link to="#sponsors" onClick={(e) => { e.preventDefault(); toggleDropdown('sponsors'); }}>
-                    <span>Sponsors</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['sponsors'] ? 'rotate-icon' : ''}`}></i>
-                  </Link>
-                  <ul>
-                    <li><Link to="news-details.html">Speakers</Link></li>
-                    <li><Link to="event-details.html">Event Details</Link></li>
-                    <li><Link to="privacy.html">Gallery</Link></li>
-                    <li><Link to="terms-of-service.html">Sponsors</Link></li>
-                    <li><Link to="404.html">Error 404</Link></li>
-                    <li><Link to="starter-page.html">Contact</Link></li>
-                  </ul>
-                </li>
-
-                <li className={`dropdown ${openDropdowns['pricing'] ? 'dropdown-active' : ''}`}>
-                  <Link to="#pricing" onClick={(e) => { e.preventDefault(); toggleDropdown('pricing'); }}>
-                    <span>pricing</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['pricing'] ? 'rotate-icon' : ''}`}></i>
-                  </Link>
-                  <ul>
-                    <li><Link to="#">Dropdown 1</Link></li>
-                    <li className="dropdown">
-                      <Link to="#deep-dropdown" onClick={(e) => { e.preventDefault(); toggleDropdown('deep-dropdown'); }}>
-                        <span>Deep Dropdown</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['deep-dropdown'] ? 'rotate-icon' : ''}`}></i>
-                      </Link>
-                      <ul className={openDropdowns['deep-dropdown'] ? 'dropdown-active' : ''}>
-                        <li><Link to="#">Deep Dropdown 1</Link></li>
-                        <li><Link to="#">Deep Dropdown 2</Link></li>
-                        <li><Link to="#">Deep Dropdown 3</Link></li>
-                        <li><Link to="#">Deep Dropdown 4</Link></li>
-                        <li><Link to="#">Deep Dropdown 5</Link></li>
-                      </ul>
-                    </li>
-                    <li><Link to="#">Dropdown 2</Link></li>
-                    <li><Link to="#">Dropdown 3</Link></li>
-                    <li><Link to="#">Dropdown 4</Link></li>
-                  </ul>
-                </li>
-                <li><Link to="contact.html">Contact</Link></li>
+              
               </ul>
               {/* 7. Add onClick to the mobile toggle button and change icon dynamically */}
               <i

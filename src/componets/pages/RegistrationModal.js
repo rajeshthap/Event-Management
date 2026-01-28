@@ -60,6 +60,8 @@ const RegistrationModal = ({ show, handleClose }) => {
   const [phoneAlreadyRegisteredMessage, setPhoneAlreadyRegisteredMessage] = useState(''); // New state for phone already registered message
   const [userTypeError, setUserTypeError] = useState(''); // New state for user type error
   const [certificateUrls, setCertificateUrls] = useState({}); // To store URLs of uploaded certificates
+  const [emailNotVerified, setEmailNotVerified] = useState(false); // New state for unverified email
+  const [checkingEmail, setCheckingEmail] = useState(false); // New state for email checking status
   
   // Ref for file inputs
   const fileInputRef = useRef(null);
@@ -263,6 +265,62 @@ const RegistrationModal = ({ show, handleClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Check if email is already registered but not verified
+  const checkEmailStatus = async (email) => {
+    // Don't check if email is empty or invalid
+    if (!email || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
+      setEmailNotVerified(false);
+      return;
+    }
+    
+    setCheckingEmail(true);
+    setApiError('');
+    
+    try {
+      // API call to check email status
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/check-email-status/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email
+        }),
+        signal: controller.signal,
+        mode: 'cors'
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        // If the endpoint doesn't exist or returns an error, just continue
+        setEmailNotVerified(false);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // If email is registered but not verified, show the verification link
+      if (data.registered && !data.verified) {
+        setEmailNotVerified(true);
+        setRegisteredEmail(email);
+      } else {
+        setEmailNotVerified(false);
+      }
+      
+    } catch (error) {
+      // If there's an error (like the endpoint doesn't exist), just continue
+      console.log('Error checking email status:', error);
+      setEmailNotVerified(false);
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
   // Handle input change for registration form
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -299,6 +357,20 @@ const RegistrationModal = ({ show, handleClose }) => {
     // Clear user type error when user type is changed
     if (name === 'user_type' && userTypeError) {
       setUserTypeError('');
+    }
+    
+    // Check email status when email changes
+    if (name === 'email') {
+      // Clear previous messages
+      setAlreadyRegisteredMessage('');
+      setEmailNotVerified(false);
+      
+      // Check email status after a short delay to avoid too many API calls
+      const timer = setTimeout(() => {
+        checkEmailStatus(processedValue);
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
   };
 
@@ -1006,7 +1078,7 @@ const RegistrationModal = ({ show, handleClose }) => {
     }
   };
 
-  // Handle resend verification code
+  // Handle resend verification code - Updated to use the correct API endpoint
   const handleResendCode = async () => {
     if (countdown > 0) return; // Prevent multiple requests during countdown
     
@@ -1019,8 +1091,8 @@ const RegistrationModal = ({ show, handleClose }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      // Changed to use the resend verification code endpoint
-      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/resend-verification-code/', {
+      // Updated to use the correct resend email OTP endpoint
+      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/resend-email-otp/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1034,6 +1106,10 @@ const RegistrationModal = ({ show, handleClose }) => {
       });
       
       clearTimeout(timeoutId);
+      
+      console.log('Resend OTP payload:', {
+        email: registeredEmail
+      });
       
       // Check if response is OK
       if (!response.ok) {
@@ -1061,7 +1137,7 @@ const RegistrationModal = ({ show, handleClose }) => {
       
       // Parse successful response
       const data = await response.json();
-      console.log('Resend Code API Response:', data); // Log the response for debugging
+      console.log('Resend OTP API Response:', data); // Log the response for debugging
       
       // On success
       setResendSuccess(true);
@@ -1085,7 +1161,7 @@ const RegistrationModal = ({ show, handleClose }) => {
       }, 3000);
       
     } catch (error) {
-      console.error('Resend code error:', error);
+      console.error('Resend OTP error:', error);
       
       // Handle different types of errors
       if (error.name === 'AbortError') {
@@ -1100,6 +1176,12 @@ const RegistrationModal = ({ show, handleClose }) => {
       
       setIsSubmitting(false);
     }
+  };
+
+  // Handle direct verification for already registered but unverified email
+  const handleDirectVerification = () => {
+    setRegisteredEmail(formData.email);
+    setCurrentStep('verification');
   };
 
   // Open certificate in new tab
@@ -1126,6 +1208,8 @@ const RegistrationModal = ({ show, handleClose }) => {
       setPhoneAlreadyRegisteredMessage('');
       setUserTypeError('');
       setCertificateUrls({});
+      setEmailNotVerified(false);
+      setCheckingEmail(false);
     }
   }, [show]);
 
@@ -1349,18 +1433,46 @@ const RegistrationModal = ({ show, handleClose }) => {
 
               <Form.Group className="mb-3">
                 <Form.Label className="form-label-custom">Email Address<span className="star">*</span></Form.Label>
-                <Form.Control
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  isInvalid={!!errors.email}
-                  placeholder="Enter your email"
-                  className="form-control-custom"
-                />
+                <div className="d-flex align-items-center">
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    isInvalid={!!errors.email}
+                    placeholder="Enter your email"
+                    className="form-control-custom"
+                  />
+                  {checkingEmail && (
+                    <div className="ms-2">
+                      <div className="spinner-border spinner-border-sm text-primary" role="status">
+                        <span className="visually-hidden">Checking...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <Form.Control.Feedback type="invalid" className='val-error'>
                   {errors.email}
                 </Form.Control.Feedback>
+                
+                {/* Display verification link for already registered but unverified email */}
+                {emailNotVerified && (
+                  <Alert variant="warning" className="mt-2">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        This email is already registered but not verified.
+                      </div>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={handleDirectVerification}
+                      >
+                        Verify Email
+                      </Button>
+                    </div>
+                  </Alert>
+                )}
+                
                 {/* Display already registered message below the email field */}
                 {alreadyRegisteredMessage && (
                   <Alert variant={alreadyRegisteredMessage.includes('not verified') ? 'warning' : 'info'} className="mt-2">

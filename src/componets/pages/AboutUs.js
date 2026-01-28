@@ -6,18 +6,19 @@ function AboutUs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageError, setImageError] = useState(false);
-
+  const id = 3;
+  
   // Fetch about us data from API
   useEffect(() => {
     const fetchAboutData = async () => {
       try {
-        const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/aboutus-item/');
+        const response = await fetch(`https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/aboutus-item/?id=${id}`);
         const data = await response.json();
         
         console.log('About Us API Response:', data); // Debug log
         
-        if (data.success && data.data.length > 0) {
-          setAboutData(data.data[0]);
+        if (data.success && data.data) {
+          setAboutData(data.data);
         } else {
           throw new Error('No about us data available');
         }
@@ -43,13 +44,13 @@ function AboutUs() {
     if (!aboutData || !aboutData.module) return [];
     
     return aboutData.module.filter(item => {
-      // Filter out mission and vision items, and items with empty descriptions
       return item.title && 
              item.description && 
+             item.description.trim() !== '' && 
              !item.title.toLowerCase().includes('mission') && 
              !item.title.toLowerCase().includes('vision') &&
-             !isNaN(item.title) || // Keep numeric years
-             (item.title.length <= 4 && /^\d+$/.test(item.title)); // Keep 4-digit years
+             /^\d+$/.test(item.title) && 
+             item.title.length <= 4;
     });
   };
 
@@ -66,6 +67,24 @@ function AboutUs() {
     );
     
     return { mission, vision };
+  };
+
+  // Extract all other module items (not timeline, mission, or vision)
+  const getOtherItems = () => {
+    if (!aboutData || !aboutData.module) return [];
+    
+    const timelineItems = getTimelineItems();
+    const { mission, vision } = getMissionVision();
+    
+    return aboutData.module.filter(item => {
+      // Skip if it's a timeline item, mission, or vision
+      if (timelineItems.includes(item)) return false;
+      if (mission === item) return false;
+      if (vision === item) return false;
+      
+      // Only include items with both title and description
+      return item.title && item.description && item.description.trim() !== '';
+    });
   };
 
   // Construct image URL
@@ -101,6 +120,7 @@ function AboutUs() {
 
   const timelineItems = getTimelineItems();
   const { mission, vision } = getMissionVision();
+  const otherItems = getOtherItems();
   const imageUrl = getImageUrl();
 
   return (
@@ -109,8 +129,7 @@ function AboutUs() {
         <div className="container" data-aos="fade-up" data-aos-delay="100">
           <div className="row align-items-center g-5">
             <div className="col-lg-6">
-              <div className="about-content" data-aos="fade-up" data-aos-delay="200">
-                <h3>Our Story</h3>
+              <div className="about-content mt-4" data-aos="fade-up" data-aos-delay="200">
                 <h2>{aboutData ? aboutData.title : "Educating Minds, Inspiring Hearts"}</h2>
                 <p>
                   {aboutData ? 
@@ -119,17 +138,33 @@ function AboutUs() {
                   }
                 </p>
 
-                <div className="timeline">
-                  {timelineItems.map((item, index) => (
-                    <div className="timeline-item" key={index}>
-                      <div className="timeline-dot"></div>
-                      <div className="timeline-content">
+                {/* Display all other module items */}
+                {otherItems.length > 0 && (
+                  <div className="other-items mt-4">
+                    {otherItems.map((item, index) => (
+                      <div className="mb-4" key={index}>
                         <h4>{item.title}</h4>
                         <p>{item.description}</p>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Display timeline items */}
+                {timelineItems.length > 0 && (
+                  <div className="timeline mt-4">
+                    <h3 className="mb-4">Our Journey</h3>
+                    {timelineItems.map((item, index) => (
+                      <div className="timeline-item" key={index}>
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-content">
+                          <h4>{item.title}</h4>
+                          <p>{item.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -142,65 +177,20 @@ function AboutUs() {
                   onError={handleImageError}
                 />
 
-                <div className="mission-vision" data-aos="fade-up" data-aos-delay="400">
-                  <div className="mission">
-                    <h3>{mission ? mission.title : "Our Mission"}</h3>
-                    <p>{mission ? mission.description : "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Donec velit neque, auctor sit amet aliquam vel, ullamcorper sit amet ligula."}</p>
-                  </div>
-
-                  <div className="vision">
-                    <h3>{vision ? vision.title : "Our Vision"}</h3>
-                    <p>{vision ? vision.description : "Nulla porttitor accumsan tincidunt. Mauris blandit aliquet elit, eget tincidunt nibh pulvinar a. Cras ultricies ligula sed magna dictum porta."}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="row mt-5">
-            <div className="col-lg-12">
-              <div className="core-values" data-aos="fade-up" data-aos-delay="500">
-                <h3 className="text-center mb-4">Core Values</h3>
-                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-                  <div className="col">
-                    <div className="value-card">
-                      <div className="value-icon">
-                        <i className="bi bi-book"></i>
-                      </div>
-                      <h4>Academic Excellence</h4>
-                      <p>Praesent sapien massa, convallis a pellentesque nec, egestas non nisi.</p>
+                <div className="mission-vision mt-4" data-aos="fade-up" data-aos-delay="400">
+                  {mission && (
+                    <div className="mission mb-4">
+                      <h3>{mission.title}</h3>
+                      <p>{mission.description}</p>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="col">
-                    <div className="value-card">
-                      <div className="value-icon">
-                        <i className="bi bi-people"></i>
-                      </div>
-                      <h4>Community Engagement</h4>
-                      <p>Vivamus magna justo, lacinia eget consectetur sed, convallis at tellus.</p>
+                  {vision && (
+                    <div className="vision">
+                      <h3>{vision.title}</h3>
+                      <p>{vision.description}</p>
                     </div>
-                  </div>
-
-                  <div className="col">
-                    <div className="value-card">
-                      <div className="value-icon">
-                        <i className="bi bi-lightbulb"></i>
-                      </div>
-                      <h4>Innovation</h4>
-                      <p>Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem.</p>
-                    </div>
-                  </div>
-
-                  <div className="col">
-                    <div className="value-card">
-                      <div className="value-icon">
-                        <i className="bi bi-globe"></i>
-                      </div>
-                      <h4>Global Perspective</h4>
-                      <p>Donec sollicitudin molestie malesuada. Curabitur non nulla sit amet nisl tempus.</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -59,46 +59,33 @@ const menuItems = [
    
 
   
-   {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "About Us",
-  submenu: [
-    {
-      label: "Add Profile",
-      path: "/#",
-      icon: <FaUserCircle />, // profile
-    },
-     {
-          label: "Manage Profile",
-          path: "/#",
-          icon: <FaImage />,
-        },
-    {
-      label: "Add About Us",
-      path: "/AddAboutUs",
-      icon: <FaEdit />, // add/edit content
-    },
-    {
-      label: "Manage About Us",
-      path: "/ManageAboutUs",
-      icon: <FaListUl />, // manage/list
-    },
-  ],
-},
-{
-  icon: <FaBullseye />, // Our Focus main
-  label: "Our Focus",
-  submenu: [
-    {
-      label: "Add Auto-Immune Diseases",
-      path: "/#",
-      icon: <FaPlusSquare />, // add focus
-    },
-    {
-      label: "Manage Auto-Immune Diseases",
-      path: "#",
-      icon: <FaTasks />, // manage focus
-    },
+//    {
+//   icon: <FaInfoCircle />,   // About Us main
+//   label: "About Us",
+//   submenu: [
+//     {
+//       label: "Add Profile",
+//       path: "/#",
+//       icon: <FaUserCircle />, // profile
+//     },
+    
+    
+//   ],
+// },
+// {
+//   icon: <FaBullseye />, // Our Focus main
+//   label: "Our Focus",
+//   submenu: [
+//     {
+//       label: "Add Auto-Immune Diseases",
+//       path: "/#",
+//       icon: <FaPlusSquare />, // add focus
+//     },
+//     {
+//       label: "Manage Auto-Immune Diseases",
+//       path: "#",
+//       icon: <FaTasks />, // manage focus
+//     },
 
    
    
@@ -106,24 +93,20 @@ const menuItems = [
      
 
    
-    {
-      label: "Manage Own Manufacturing",
-      path: "#",
-      icon: <FaTasks />, // manage focus
-    },
-  ],
-},
+   
+//   ],
+// },
 
 
 
    
 
-     {
-      icon: <FaTachometerAlt />,
-      label: "Manage Hero Section",
-      path: "/ManageHeroSection",
-      active: true,
-    },
+    //  {
+    //   icon: <FaTachometerAlt />,
+    //   label: "Participat",
+    //   path: "/ManageHeroSection",
+    //   active: true,
+    // },
     
     
   

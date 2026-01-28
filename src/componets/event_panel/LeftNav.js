@@ -70,6 +70,12 @@ const menuItems = [
       path: "/ParticipatedUser",
       active: true,
     },
+     {
+      icon: <FaTachometerAlt />,
+      label: "Total Query",
+      path: "/TotalQuery",
+      active: true,
+    },
 
 
    {
@@ -138,6 +144,82 @@ const menuItems = [
      {
           label: "Manage header",
           path: "/ManageHeader",
+          icon: <FaImage />,
+        },
+   
+   
+  ],
+},
+ {
+  icon: <FaInfoCircle />,   // About Us main
+  label: "Gallery",
+  submenu: [
+    {
+      label: "Add Gallery",
+      path: "/AddGallery",
+      icon: <FaUserCircle />, // profile
+    },
+     {
+          label: "Manage Gallery",
+          path: "/ManageGallery",
+          icon: <FaImage />,
+        },
+   
+   
+  ],
+},
+   {
+  icon: <FaInfoCircle />,   // About Us main
+  label: "Services",
+  submenu: [
+    {
+      label: "Add Corporateevents",
+      path: "/AddCorporateevents",
+      icon: <FaUserCircle />, // profile
+    },
+     {
+          label: "Manage Services",
+          path: "/ManageCorporateevents",
+          icon: <FaImage />,
+        },
+         {
+          label: "Add Entertainment",
+          path: "/AddEntertainment",
+          icon: <FaImage />,
+        },
+         {
+          label: "Manage Entertainment",
+          path: "/ManageEntertainment",
+          icon: <FaImage />,
+        },
+         {
+          label: "Add Concert",
+          path: "/AddConcert",
+          icon: <FaImage />,
+        },
+         {
+          label: "Manage Concert",
+          path: "/ManageConcert",
+          icon: <FaImage />,
+        },
+         {
+          label: "Add Parties",
+          path: "/AddPrivateParties",
+          icon: <FaImage />,
+        },
+         {
+          label: "Manage Parties",
+          path: "/ManageParties",
+          icon: <FaImage />,
+        },
+         {
+          label: "Add Seminars Conferences",
+          path: "/AddSeminarsConferences",
+          icon: <FaImage />,
+        },
+         {
+          label: "Manage Seminars Conferences",
+          path: "/ManageSeminarsConferences",
           icon: <FaImage />,
         },
    

@@ -1,8 +1,9 @@
 // src/componets/pages/Login.js
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Adjust path if necessary
-import LoginImg from '../../assets/images/Img_login.avif';
+import LoginImg from "../../assets/images/hero-area.jpg";
+import { Button } from 'react-bootstrap';
 
 const Login = () => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -155,6 +156,9 @@ const Login = () => {
                         'Login'
                       )}
                     </button>
+                    <div className='mt-3'>
+                  <Link to="/ForgotPassword"> <Button className='w-100'>Forgot Password</Button> </Link> 
+                  </div>
                   </div>
                 </div>
               </div>
