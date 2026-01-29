@@ -379,9 +379,10 @@ const ManageEvent = () => {
     setIsSubmitting(true);
     try {
       const response = await authFetch(
-        `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/?id=${eventToDelete.id}`,
+        `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-item/`,
         {
           method: "DELETE",
+          body: JSON.stringify({ event_id: eventToDelete.event_id }),
         }
       );
 

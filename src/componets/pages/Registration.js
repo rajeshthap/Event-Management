@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../assets/css/registration.css';
 import RegistrationPreview from './RegistrationPreview';
 
-const RegistrationModal = () => {
+const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = false, pendingEventId = null }) => {
   const navigate = useNavigate();
   
   // Form state
@@ -15,7 +15,7 @@ const RegistrationModal = () => {
     profile_image_preview: '',
     full_name: '',
     gender: '',
-    email: '',
+    email: propEmail || '', // Auto-fill with prop email if provided
     password: '',
     confirmPassword: '',
     date_of_birth: '',
@@ -1197,10 +1197,13 @@ const RegistrationModal = () => {
         }
       }
       
-      // On success, move to verification step
+      // On success, transition to verification step
       setRegisteredEmail(formData.email);
       setSubmitSuccess(true);
       setIsSubmitting(false);
+      
+      // Move to verification step
+      setCurrentStep('verification');
       
       // Reset form after successful submission
       setTimeout(() => {
@@ -1335,9 +1338,13 @@ const RegistrationModal = () => {
         setVerificationSuccess(true);
         setIsSubmitting(false);
         
-        // Close modal and navigate to login after successful verification
+        // Close modal and navigate conditionally after successful verification
         setTimeout(() => {
-          navigate('/login');
+          if (fromEvent) {
+            navigate('/Events');
+          } else {
+            navigate('/Login');
+          }
         }, 2000);
         
       } catch (error) {
@@ -2247,7 +2254,9 @@ const RegistrationModal = () => {
                       <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
                     </div>
                     <h4 className="text-success">Email Verified Successfully!</h4>
-                    <p className="text-muted">Redirecting to login page...</p>
+                    <p className="text-muted">
+                      {fromEvent ? 'Redirecting back to events page...' : 'Redirecting to login page...'}
+                    </p>
                     <ProgressBar animated now={100} className="mt-3" />
                   </div>
                 ) : (
@@ -2327,4 +2336,4 @@ const RegistrationModal = () => {
   );
 };
 
-export default RegistrationModal;
+export default Registration;

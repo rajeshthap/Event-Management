@@ -56,6 +56,7 @@ import AddGallery from "./componets/event_panel/dashboard_pages/AddGallery";
 import ManageGallery from "./componets/event_panel/dashboard_pages/ManageGallery";
 import Gallery from "./componets/pages/Gallery";
 import ProtectedRoute from "./componets/protected/ProtectedRoute";
+import Registration from "./componets/pages/Registration";
 
 
 function App() {
@@ -117,6 +118,7 @@ function App() {
              <Route path="/PrivateParties" element={<PrivateParties />} />
              <Route path="/Seminar" element={<Seminar />} />
              <Route path="/Gallery" element={<Gallery />} />
+             <Route path="/Registration" element={<Registration />} />
             
             {/* Protected Routes */}
             <Route path="/DashBoard" element={

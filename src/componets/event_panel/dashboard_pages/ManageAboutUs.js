@@ -45,7 +45,7 @@ const ManageAboutUs = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
 
   // Base URL for images
-  const BASE_URL = "https://mahadevaaya.com";
+  const BASE_URL = "https://mahadevaaya.com/eventmanagement/eventmanagement_backend/";
 
   // Check device width
   useEffect(() => {

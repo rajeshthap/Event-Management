@@ -1,10 +1,10 @@
 // src/components/HeroCarousel.js
 import React, { useState, useEffect } from 'react';
 import Carousel from 'react-bootstrap/Carousel';
+import { useNavigate } from 'react-router-dom';
 import Showcase from "../../assets/images/education/showcase-6.webp";
 import Slide2Image from "../../assets/images/education/activities-1.webp"; 
 import Slide3Image from "../../assets/images/education/events-1.webp";
-import RegistrationModal from './RegistrationModal';
 import "../../assets/css/mainstyle.css";
 
 // Default stats to use when API doesn't provide data
@@ -26,8 +26,8 @@ const defaultEvent = {
 const defaultImages = [Showcase, Slide2Image, Slide3Image];
 
 function EventCarousel() {
+  const navigate = useNavigate();
   const [index, setIndex] = useState(0);
-  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [carouselData, setCarouselData] = useState([]);
   const [eventsData, setEventsData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -186,9 +186,10 @@ function EventCarousel() {
     setIndex(selectedIndex);
   };
 
-  const openRegistrationModal = (e) => {
+  // Navigate to registration page
+  const openRegistration = (e) => {
     e.preventDefault();
-    setShowRegistrationModal(true);
+    navigate('/registration');
   };
 
   // Handle image loading errors
@@ -249,7 +250,7 @@ function EventCarousel() {
                         ))}
                       </div>
                       <div className="action-buttons">
-                        <a href="/RegistrationModal" className="btn-primary" onClick={openRegistrationModal}>Registration</a>
+                        <a href="/registration" className="btn-primary" onClick={openRegistration}>Registration</a>
                       </div>
                     </div>
                     <div className="col-lg-6 hero-media" data-aos="zoom-in">
@@ -296,12 +297,6 @@ function EventCarousel() {
           </Carousel.Item>
         ))}
       </Carousel>
-
-      {/* Registration Modal */}
-      <RegistrationModal 
-        show={showRegistrationModal} 
-        handleClose={() => setShowRegistrationModal(false)} 
-      />
     </>
   );
 }

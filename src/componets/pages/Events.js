@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import RegistrationModal from './RegistrationModal'; // Import the RegistrationModal component
+import Registration from './Registration'; // Import the Registration component
 import { Button, Container, Form, Modal } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 function Events() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +18,7 @@ function Events() {
   const [activeFilter, setActiveFilter] = useState('all'); // For filtering events
   const [pendingEventId, setPendingEventId] = useState(null); // Store event ID if registration is pending
   const [registeredEvents, setRegisteredEvents] = useState([]); // Store events user has registered for
+  const [isRegistrationActive, setIsRegistrationActive] = useState(false); // Track if registration is active
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -233,6 +236,7 @@ function Events() {
     } else {
       setShowEmailModal(false);
       setShowRegistrationModal(true);
+      setIsRegistrationActive(true);
     }
   };
 
@@ -248,17 +252,21 @@ function Events() {
 
   const handleRegistrationSuccess = (userData) => {
     setUserEmail(userData.email);
-    setUserId(userData.user_id);
     setShowRegistrationModal(false);
+    setIsRegistrationActive(false);
     setRegistrationMessage('Now you can apply for events');
     
-    fetchRegisteredEvents(userData.user_id).then(userRegisteredEvents => {
-      setRegisteredEvents(userRegisteredEvents);
-    });
+    // Since we don't have user_id from Registration component, we need to fetch it
+    checkUserExists(userData.email);
     
     if (pendingEventId) {
-      registerForEvent(pendingEventId);
-      setPendingEventId(null);
+      // We need to wait for checkUserExists to complete first
+      setTimeout(() => {
+        if (userId) {
+          registerForEvent(pendingEventId);
+          setPendingEventId(null);
+        }
+      }, 1000);
     }
   };
 
@@ -337,6 +345,18 @@ function Events() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  // Conditionally render events or registration
+  if (isRegistrationActive) {
+    return (
+      <Registration 
+        email={userEmail}
+        onRegistrationSuccess={handleRegistrationSuccess}
+        fromEvent={true} // Indicate that registration was initiated from events page
+        pendingEventId={pendingEventId}
+      />
     );
   }
 
@@ -492,15 +512,12 @@ function Events() {
         </Modal.Body>
       </Modal>
 
-      <RegistrationModal 
-        show={showRegistrationModal} 
-        handleClose={() => {
-          setShowRegistrationModal(false);
-          setPendingEventId(null);
-        }}
-        onRegistrationSuccess={handleRegistrationSuccess}
-        userEmail={userEmail}
-      />
+      {showRegistrationModal && (
+        <Registration 
+          email={userEmail}
+          onRegistrationSuccess={handleRegistrationSuccess}
+        />
+      )}
     </Container>
   );
 }

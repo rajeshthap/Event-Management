@@ -4,7 +4,7 @@ import { Image, Badge, Button } from 'react-bootstrap';
 import { FaPrint, FaTimes } from 'react-icons/fa';
 import '../../assets/css/registration.css';
 
-const RegistrationPreview = ({ formData, certificateUrls }) => {
+const RegistrationPreview = ({ formData, certificateUrls, alreadyRegisteredMessage, phoneAlreadyRegisteredMessage }) => {
   // State for full-screen certificate preview
   const [fullscreenPreview, setFullscreenPreview] = useState({
     isOpen: false,
@@ -209,7 +209,7 @@ const RegistrationPreview = ({ formData, certificateUrls }) => {
                 <td width="30%" style="font-weight: bold;">Type:</td>
                 <td>${formData.user_type}</td>
               </tr>
-              ${formData.user_type === 'organization' ? `
+               ${formData.user_type === 'team' ? `
               <tr>
                 <td style="font-weight: bold;">Team Name:</td>
                 <td>${formData.team_name}</td>
@@ -375,6 +375,18 @@ const RegistrationPreview = ({ formData, certificateUrls }) => {
   return (
     <>
       <div className="registration-preview-container p-3">
+        {/* Display already registered messages */}
+        {alreadyRegisteredMessage && (
+          <div className="alert alert-warning mb-3">
+            {alreadyRegisteredMessage}
+          </div>
+        )}
+        {phoneAlreadyRegisteredMessage && (
+          <div className="alert alert-warning mb-3">
+            {phoneAlreadyRegisteredMessage}
+          </div>
+        )}
+        
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h4 className="mb-0">Registration Preview</h4>
           <Button variant="primary" onClick={handlePrintPreview} className="no-print">
@@ -390,18 +402,18 @@ const RegistrationPreview = ({ formData, certificateUrls }) => {
               <tr className="section-header">
                 <td colSpan="2" className=" bg-light font-weight-bold">User Type</td>
               </tr>
-              <tr>
-                <td width="30%" className="font-weight-bold">Type:</td>
-                <td>
-                  <Badge bg="info">{formData.user_type}</Badge>
-                </td>
-              </tr>
-              {formData.user_type === 'organization' && (
-                <tr>
-                  <td className="font-weight-bold">Team Name:</td>
-                  <td>{formData.team_name}</td>
-                </tr>
-              )}
+               <tr>
+                 <td width="30%" className="font-weight-bold">Type:</td>
+                 <td>
+                   <Badge bg="info">{formData.user_type === 'individual' ? 'Individual' : 'Organization'}</Badge>
+                 </td>
+               </tr>
+               {formData.user_type === 'team' && (
+                 <tr>
+                   <td className="font-weight-bold">Team Name:</td>
+                   <td>{formData.team_name}</td>
+                 </tr>
+               )}
 
               {/* Profile Information Section */}
               <tr className="section-header">

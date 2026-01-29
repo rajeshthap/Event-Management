@@ -331,9 +331,10 @@ const ManageCarousel = () => {
     setIsSubmitting(true);
     try {
       const response = await authFetch(
-        `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/?id=${itemToDelete.id}`,
+        `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/carousel1-item/`,
         {
           method: "DELETE",
+          body: JSON.stringify({ id: itemToDelete.id }),
         }
       );
 
@@ -483,7 +484,7 @@ const ManageCarousel = () => {
                                       {item.image && (
                                         <div className="mb-3 text-center">
                                           <img 
-                                            src={`https://mahadevaaya.com${item.image}`} 
+                                            src={item.image ? (item.image.startsWith('http') ? item.image : `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/${item.image}`) : ''} 
                                             alt={item.title} 
                                             className="img-fluid rounded"
                                             style={{ maxHeight: "150px" }}
@@ -590,10 +591,10 @@ const ManageCarousel = () => {
                             <Form.Label>Image</Form.Label>
                             {formData.imagePreview && (
                               <div className="mb-3">
-                                <img 
+                                 <img 
                                   src={typeof formData.imagePreview === 'string' && formData.imagePreview.startsWith('http') 
                                     ? formData.imagePreview 
-                                    : formData.imagePreview} 
+                                    : (formData.imagePreview ? `https://mahadevaaya.com/eventmanagement/eventmanagement_backend/${formData.imagePreview}` : '')} 
                                   alt="Preview" 
                                   className="img-fluid rounded"
                                   style={{ maxHeight: "200px" }}
