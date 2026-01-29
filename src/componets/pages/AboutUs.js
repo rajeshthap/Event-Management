@@ -45,7 +45,9 @@ function AboutUs() {
     
     return aboutData.module.filter(item => {
       return item.title && 
+             typeof item.title === 'string' &&
              item.description && 
+             typeof item.description === 'string' &&
              item.description.trim() !== '' && 
              !item.title.toLowerCase().includes('mission') && 
              !item.title.toLowerCase().includes('vision') &&
@@ -59,10 +61,12 @@ function AboutUs() {
     if (!aboutData || !aboutData.module) return { mission: null, vision: null };
     
     const mission = aboutData.module.find(item => 
+      item.title && typeof item.title === 'string' && 
       item.title.toLowerCase().includes('mission')
     );
     
     const vision = aboutData.module.find(item => 
+      item.title && typeof item.title === 'string' &&
       item.title.toLowerCase().includes('vision')
     );
     

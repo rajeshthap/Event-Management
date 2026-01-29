@@ -232,9 +232,9 @@ const ManageCarousel = () => {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("sub_title", formData.sub_title);
-      formDataToSend.append("description", formData.description);
+      formDataToSend.append("title", formData.title.trim());
+      formDataToSend.append("sub_title", formData.sub_title.trim());
+      formDataToSend.append("description", formData.description.trim());
       
       if (formData.image) {
         formDataToSend.append("image", formData.image);

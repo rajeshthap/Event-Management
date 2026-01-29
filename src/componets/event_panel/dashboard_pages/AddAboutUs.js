@@ -111,8 +111,11 @@ const AddAboutUs = () => {
       formDataToSend.append("description", formData.description);
       formDataToSend.append("page", formData.page);
       
-      // Add modules as JSON string
-      formDataToSend.append("module", JSON.stringify(formData.modules));
+      // Add modules as JSON string, trim all module titles and descriptions
+      const trimmedModules = formData.modules.map(module => ({
+        [module.title.trim()]: module.description.trim()
+      }));
+      formDataToSend.append("module", JSON.stringify(trimmedModules));
       
       if (formData.image) {
         formDataToSend.append("image", formData.image);
