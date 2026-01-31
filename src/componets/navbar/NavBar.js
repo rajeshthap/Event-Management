@@ -78,113 +78,115 @@ function NavBar() {
 
   return (
     <>
-      <div className='nav-start sticky-top'>
-        <div className='top-nav d-flex align-items-center'>
-          {companies.map((company) => (
-            <Container 
-              key={company.id}
-              className='container-fluid container-xl d-flex justify-content-center justify-content-md-between py-1'
-            >
-              {/* Hide email and phone on mobile */}
-              <div className='d-none d-md-flex align-items-center'>
-                <div className='d-flex align-items-center'>
-                  <div className="d-flex align-items-center me-4">
-                    <FaEnvelope className="me-2" />
-                    <span>{company.email}</span>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <FaPhone className="me-2" />
-                    <span>{company.phone}</span>
-                  </div>
+      {/* 
+        This top bar will scroll normally. It's now a sibling to the sticky nav.
+      */}
+      <div className='top-nav d-flex align-items-center'>
+        {companies.map((company) => (
+          <Container 
+            key={company.id}
+            className='container-fluid container-xl d-flex justify-content-center justify-content-md-between py-1'
+          >
+            {/* Hide email and phone on mobile */}
+            <div className='d-none d-md-flex align-items-center'>
+              <div className='d-flex align-items-center'>
+                <div className="d-flex align-items-center me-4">
+                  <FaEnvelope className="me-2" />
+                  <span>{company.email}</span>
+                </div>
+                <div className="d-flex align-items-center">
+                  <FaPhone className="me-2" />
+                  <span>{company.phone}</span>
                 </div>
               </div>
-              
-              {/* Mobile view - show social icons and auth buttons */}
-              <div className='social-links d-flex d-md-none align-items-center justify-content-between w-100'>
-                <ul className="event-social-link d-flex list-unstyled mb-0">
-                  {company.profile_link.map((link, index) => (
-                    <li key={index} className="mx-2">
-                      <a href={link} target="_blank" rel="noopener noreferrer" data-discover="true">
-                        {getSocialIcon(link)}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <ul className="list-unstyled mb-0">
-                  <li>
-                    <Button variant="primary" className="login-btn" href="/Login">Login</Button>
-                    <Button variant="primary" className="login-btn mx-3" href="/Registration">Register</Button>
-                  </li>
-                </ul>
-              </div>
-              
-              {/* Desktop view - show all elements */}
-              <div className='social-links d-none d-md-flex align-items-center'>
-                <ul className="event-social-link d-flex list-unstyled mb-0">
-                  {company.profile_link.map((link, index) => (
-                    <li key={index} className="mx-2">
-                      <a href={link} target="_blank" rel="noopener noreferrer" data-discover="true">
-                        {getSocialIcon(link)}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <ul className="list-unstyled mb-0 ms-3">
-                  <li>
-                    <Button variant="primary" className="login-btn" href="/Login">Login</Button>
-                    <Button variant="primary" className="login-btn mx-3" href="/Registration">Register</Button>
-                  </li>
-                </ul>
-              </div>
-            </Container>
-          ))}
-        </div>
-        
-        <div className='nav-start-sub'>
-          <header
-            id="main-navbar"
-            className={`header d-flex align-items-center ${isMenuOpen ? 'mobile-nav-active' : ''}`}
-            style={{
-              position: "sticky",
-            }}
-          >
-            <div className="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-end">
-              <Link to="/" className="logo d-flex align-items-center me-auto">
-                <img src={EventLogo} alt="logo" className="logo-wecd" />
-                <h1 className="sitename">Br Events</h1>
-              </Link>
-
-              <nav id="navmenu" className={`navmenu ${isMenuOpen ? 'navmenu-active' : ''}`}>
-                <ul>
-                  <li><Link to="/" className="active">Home</Link></li>
-                  <li><Link to="/AboutUs" className="active">About Us</Link></li>
-
-                  <li className={`dropdown ${openDropdowns['services'] ? 'dropdown-active' : ''}`}>
-                    <Link to="#services" onClick={(e) => { e.preventDefault(); toggleDropdown('services'); }}>
-                      <span>Services</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['services'] ? 'rotate-icon' : ''}`}></i>
-                    </Link>
-                    <ul>
-                      <li><Link to="/CorporateEvents">Corporate events</Link></li>
-                      <li><Link to="/EntertainmentEvents">Entertainment Events</Link></li>
-                      <li><Link to="/ConcertEvent">Concert events</Link></li>
-                      <li><Link to="/PrivateParties">Private Parties</Link></li>
-                      <li><Link to="/Seminar">Seminar</Link></li>
-                    </ul>
-                  </li>
-                  
-                  <li><Link to="/Events">Events</Link></li>
-                  <li><Link to="/Gallery">Gallery</Link></li>
-                  <li><Link to="/Contact">Contact</Link></li>
-                </ul>
-                
-                <i
-                  className={`mobile-nav-toggle d-xl-none bi ${isMenuOpen ? 'bi-x' : 'bi-list'}`}
-                  onClick={toggleMenu}
-                ></i>
-              </nav>
             </div>
-          </header>
-        </div>
+            
+            {/* Mobile view - show social icons and auth buttons */}
+            <div className='social-links d-flex d-md-none align-items-center justify-content-between w-100'>
+              <ul className="event-social-link d-flex list-unstyled mb-0">
+                {company.profile_link.map((link, index) => (
+                  <li key={index} className="mx-2">
+                    <a href={link} target="_blank" rel="noopener noreferrer" data-discover="true">
+                      {getSocialIcon(link)}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <ul className="list-unstyled mb-0">
+                <li>
+                  <Button variant="primary" className="login-btn" href="/Login">Login</Button>
+                  <Button variant="primary" className="login-btn mx-3" href="/Registration">Register</Button>
+                </li>
+              </ul>
+            </div>
+            
+            {/* Desktop view - show all elements */}
+            <div className='social-links d-none d-md-flex align-items-center'>
+              <ul className="event-social-link d-flex list-unstyled mb-0">
+                {company.profile_link.map((link, index) => (
+                  <li key={index} className="mx-2">
+                    <a href={link} target="_blank" rel="noopener noreferrer" data-discover="true">
+                      {getSocialIcon(link)}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <ul className="list-unstyled mb-0 ms-3">
+                <li>
+                  <Button variant="primary" className="login-btn" href="/Login">Login</Button>
+                  <Button variant="primary" className="login-btn mx-3" href="/Registration">Register</Button>
+                </li>
+              </ul>
+            </div>
+          </Container>
+        ))}
+      </div>
+      
+      {/* 
+        This container is now a direct child of the fragment.
+        The sticky-top class will now work correctly, sticking it to the viewport.
+      */}
+      <div className='nav-start-sub sticky-top'>
+        <header
+          id="main-navbar"
+          className={`header d-flex align-items-center ${isMenuOpen ? 'mobile-nav-active' : ''}`}
+        >
+          <div className="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-end">
+            <Link to="/" className="logo d-flex align-items-center me-auto">
+              <img src={EventLogo} alt="logo" className="logo-wecd" />
+              <h1 className="sitename">Br Events</h1>
+            </Link>
+
+            <nav id="navmenu" className={`navmenu ${isMenuOpen ? 'navmenu-active' : ''}`}>
+              <ul>
+                <li><Link to="/" className="active">Home</Link></li>
+                <li><Link to="/AboutUs" className="active">About Us</Link></li>
+
+                <li className={`dropdown ${openDropdowns['services'] ? 'dropdown-active' : ''}`}>
+                  <Link to="#services" onClick={(e) => { e.preventDefault(); toggleDropdown('services'); }}>
+                    <span>Services</span> <i className={`bi bi-chevron-down toggle-dropdown ${openDropdowns['services'] ? 'rotate-icon' : ''}`}></i>
+                  </Link>
+                  <ul>
+                    <li><Link to="/CorporateEvents">Corporate events</Link></li>
+                    <li><Link to="/EntertainmentEvents">Entertainment Events</Link></li>
+                    <li><Link to="/ConcertEvent">Concert events</Link></li>
+                    <li><Link to="/PrivateParties">Private Parties</Link></li>
+                    <li><Link to="/Seminar">Seminar</Link></li>
+                  </ul>
+                </li>
+                
+                <li><Link to="/Events">Events</Link></li>
+                <li><Link to="/Gallery">Gallery</Link></li>
+                <li><Link to="/Contact">Contact</Link></li>
+              </ul>
+              
+              <i
+                className={`mobile-nav-toggle d-xl-none bi ${isMenuOpen ? 'bi-x' : 'bi-list'}`}
+                onClick={toggleMenu}
+              ></i>
+            </nav>
+          </div>
+        </header>
       </div>
     </>
   )
