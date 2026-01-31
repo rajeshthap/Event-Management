@@ -52,6 +52,11 @@ const RegistrationPreview = ({
     });
   };
 
+  // Helper function to check if a field has a value
+  const hasValue = (field) => {
+    return field !== undefined && field !== null && field !== '';
+  };
+
   return (
     <>
       <div className="government-form-preview">
@@ -87,222 +92,305 @@ const RegistrationPreview = ({
         )}
 
         <div className="form-content p-4">
-          {/* User Type Section */}
-          <div className="form-section mb-4">
-            <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 1: USER TYPE</h5>
+          {/* Education & Training Cell Header with Photo */}
+          <div className="d-flex justify-content-between mb-3">
+            <div className="flex-grow-1">
+              <h3 className="mb-1">E v e n t </h3>
+              <p className="mb-1">R e g i s t r a t i o n I D | BCS-020250101</p>
+              <p className="mb-0 small">Dehradun, Uttarakhand</p>
+            
+              <p className="mb-0 small font-weight-bold">Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             </div>
-            <div className="section-content border border-top-0 p-3">
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Type:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">
-                    <Badge bg="info">{formData.user_type === 'individual' ? 'Individual' : 'Organization'}</Badge>
-                  </div>
-                </div>
-              </div>
-              {formData.user_type === 'team' && (
-                <div className="row mb-3">
-                  <div className="col-md-3">
-                    <label className="form-label">Team Name:</label>
-                  </div>
-                  <div className="col-md-9">
-                    <div className="form-control-static">{formData.team_name}</div>
-                  </div>
+            <div className="photo-section ms-3">
+              <label className="form-label font-weight-bold">Place Your Current Photo</label>
+              {formData.profile_image_preview ? (
+                <Image
+                  src={formData.profile_image_preview}
+                  alt="Profile Preview"
+                  style={{ width: '120px', height: '150px', objectFit: 'cover', border: '1px solid #ccc' }}
+                />
+              ) : (
+                <div className="photo-placeholder d-inline-flex align-items-center justify-content-center bg-light" 
+                     style={{ width: '120px', height: '150px', border: '1px solid #ccc' }}>
+                  <i className="bi bi-person" style={{ fontSize: '3rem' }}></i>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Profile Information Section */}
+          {/* OJT REGISTRATION FORM Title */}
+          <div className="text-center mb-4">
+            <h4 className="mb-3 font-weight-bold">OJT REGISTRATION FORM</h4>
+            <div className="d-flex align-items-center mb-3">
+              <span className="me-2 font-weight-bold">APPLICATION FOR THE COURSE OF</span>
+              <div className="border-bottom flex-grow-1"></div>
+            </div>
+          </div>
+
+          {/* PERSONAL DETAILS Section */}
           <div className="form-section mb-4">
             <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 2: PROFILE INFORMATION</h5>
+              <h5 className="mb-0 font-weight-bold">PERSONAL DETAILS:</h5>
             </div>
             <div className="section-content border border-top-0 p-3">
+              {/* Candidate Name - Always show as it's required */}
               <div className="row mb-3">
                 <div className="col-md-3">
-                  <label className="form-label">Profile Image:</label>
-                </div>
-                <div className="col-md-9">
-                  {formData.profile_image_preview ? (
-                    <Image
-                      src={formData.profile_image_preview}
-                      alt="Profile Preview"
-                      style={{ width: '100px', height: '120px', objectFit: 'cover', border: '1px solid #ccc' }}
-                    />
-                  ) : (
-                    <div className="photo-placeholder d-inline-flex align-items-center justify-content-center bg-light" 
-                         style={{ width: '100px', height: '120px', border: '1px solid #ccc' }}>
-                      <i className="bi bi-person" style={{ fontSize: '2.5rem' }}></i>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Full Name:</label>
+                  <label className="form-label font-weight-bold">Candidate Name</label>
                 </div>
                 <div className="col-md-9">
                   <div className="form-control-static">{formData.full_name}</div>
                 </div>
               </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Gender:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">{formData.gender}</div>
-                </div>
-              </div>
-              {formData.user_type === 'individual' && (
+              
+              {/* Father's/Mother Name - Only show if filled */}
+              {hasValue(formData.father_mother_name) && (
                 <div className="row mb-3">
                   <div className="col-md-3">
-                    <label className="form-label">Date of Birth:</label>
+                    <label className="form-label font-weight-bold">Father's /Mother Name</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.father_mother_name}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Address - Always show as it's required */}
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label font-weight-bold">Address:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.address}</div>
+                </div>
+              </div>
+              
+              {/* Pin-code - Only show if filled */}
+              {hasValue(formData.pin_code) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Pin-code:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.pin_code}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Telephone No - Only show if filled */}
+              {hasValue(formData.telephone) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Telephone No:</label>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="form-control-static">{formData.telephone}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Mobile No - Always show as it's required */}
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label font-weight-bold">Mobile No:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.phone}</div>
+                </div>
+              </div>
+              
+              {/* Email ID - Always show as it's required */}
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label font-weight-bold">Email ID:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.email}</div>
+                </div>
+              </div>
+              
+              {/* Date of Birth - Only show if filled */}
+              {hasValue(formData.date_of_birth) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Date of Birth:</label>
                   </div>
                   <div className="col-md-9">
                     <div className="form-control-static">{formData.date_of_birth}</div>
                   </div>
                 </div>
               )}
+              
+              {/* Aadhar No - Only show if filled */}
+              {hasValue(formData.aadhar_no) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Aadhar No:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.aadhar_no}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Highest Educational Qualification - Only show if filled */}
+              {hasValue(formData.highest_education) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Highest Educational Qualification:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.highest_education}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Other Educational Qualifications - Only show if filled */}
+              {hasValue(formData.other_education) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Other Educational Qualifications:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.other_education}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Experience - Only show if filled */}
+              {hasValue(formData.experience) && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Experience (if applicable):</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.experience}</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Contact Information Section */}
-          <div className="form-section mb-4">
-            <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 3: CONTACT INFORMATION</h5>
-            </div>
-            <div className="section-content border border-top-0 p-3">
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Email:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">{formData.email}</div>
-                </div>
+          {/* Additional Information Section - Only show if any of these fields are filled */}
+          {(hasValue(formData.talent_scope) && formData.talent_scope.length > 0) && (
+            <div className="form-section mb-4">
+              <div className="section-header text-white p-2">
+                <h5 className="mb-0 font-weight-bold">TALENT SCOPE:</h5>
               </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Phone:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">{formData.phone}</div>
-                </div>
-              </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Address:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">{formData.address}</div>
-                </div>
-              </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Location:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">{`${formData.city}, ${formData.state}, ${formData.country}`}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Talent Scope Section */}
-          <div className="form-section mb-4">
-            <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 4: TALENT SCOPE</h5>
-            </div>
-            <div className="section-content border border-top-0 p-3">
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Talents:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">
-                    {formData.talent_scope.map((talent, index) => (
-                      <Badge key={index} bg="light" text="dark" className="me-2 mb-2 p-2" style={{ fontWeight: 500 }}>
-                        {talent}
-                      </Badge>
-                    ))}
+              <div className="section-content border border-top-0 p-3">
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Talents:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">
+                      {formData.talent_scope.map((talent, index) => (
+                        <Badge key={index} bg="light" text="dark" className="me-2 mb-2 p-2" style={{ fontWeight: 500 }}>
+                          {talent}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Links Section */}
-          <div className="form-section mb-4">
-            <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 5: LINKS</h5>
-            </div>
-            <div className="section-content border border-top-0 p-3">
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Social Media Links:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">
-                    {formData.social_media_links.map((link, index) => (
-                      link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
-                    ))}
-                  </div>
-                </div>
+          {/* Social Media Links Section - Only show if any links are provided */}
+          {hasValue(formData.social_media_links) && formData.social_media_links.some(link => hasValue(link)) && (
+            <div className="form-section mb-4">
+              <div className="section-header text-white p-2">
+                <h5 className="mb-0 font-weight-bold">SOCIAL MEDIA LINKS:</h5>
               </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Additional Links:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">
-                    {formData.additional_links.map((link, index) => (
-                      link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
-                    ))}
+              <div className="section-content border border-top-0 p-3">
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Social Media:</label>
                   </div>
-                </div>
-              </div>
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">Portfolio Links:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">
-                    {formData.portfolio_links.map((link, index) => (
-                      link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
-                    ))}
+                  <div className="col-md-9">
+                    <div className="form-control-static">
+                      {formData.social_media_links.map((link, index) => (
+                        hasValue(link) && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Introduction Section */}
-          <div className="form-section mb-4">
-            <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 6: INTRODUCTION</h5>
-            </div>
-            <div className="section-content border border-top-0 p-3">
-              <div className="row mb-3">
-                <div className="col-md-3">
-                  <label className="form-label">About {formData.user_type === 'individual' ? 'You' : 'Your Organization'}:</label>
-                </div>
-                <div className="col-md-9">
-                  <div className="form-control-static">{formData.introduction}</div>
+          {/* Additional Links Section - Only show if any links are provided */}
+          {hasValue(formData.additional_links) && formData.additional_links.some(link => hasValue(link)) && (
+            <div className="form-section mb-4">
+              <div className="section-header text-white p-2">
+                <h5 className="mb-0 font-weight-bold">ADDITIONAL LINKS:</h5>
+              </div>
+              <div className="section-content border border-top-0 p-3">
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Additional Links:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">
+                      {formData.additional_links.map((link, index) => (
+                        hasValue(link) && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Certificates Section */}
-          <div className="form-section mb-4 certificates-section">
-            <div className="section-header text-white p-2">
-              <h5 className="mb-0">SECTION 7: CERTIFICATES</h5>
+          {/* Portfolio Links Section - Only show if any links are provided */}
+          {hasValue(formData.portfolio_links) && formData.portfolio_links.some(link => hasValue(link)) && (
+            <div className="form-section mb-4">
+              <div className="section-header text-white p-2">
+                <h5 className="mb-0 font-weight-bold">PORTFOLIO LINKS:</h5>
+              </div>
+              <div className="section-content border border-top-0 p-3">
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">Portfolio:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">
+                      {formData.portfolio_links.map((link, index) => (
+                        hasValue(link) && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="section-content border border-top-0 p-3">
-              {formData.selected_certificates.length > 0 ? (
+          )}
+
+          {/* Introduction Section - Only show if filled */}
+          {hasValue(formData.introduction) && (
+            <div className="form-section mb-4">
+              <div className="section-header text-white p-2">
+                <h5 className="mb-0 font-weight-bold">INTRODUCTION:</h5>
+              </div>
+              <div className="section-content border border-top-0 p-3">
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label font-weight-bold">About {formData.user_type === 'individual' ? 'You' : 'Your Organization'}:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.introduction}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Certificates Section - Only show if any certificates are selected */}
+          {hasValue(formData.selected_certificates) && formData.selected_certificates.length > 0 && (
+            <div className="form-section mb-4 certificates-section">
+              <div className="section-header text-white p-2">
+                <h5 className="mb-0 font-weight-bold">CERTIFICATES:</h5>
+              </div>
+              <div className="section-content border border-top-0 p-3">
                 <div className="table-responsive">
                   <table className="table table-bordered">
                     <thead>
@@ -358,33 +446,9 @@ const RegistrationPreview = ({
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <p className="text-center">No certificates selected</p>
-              )}
-            </div>
-          </div>
-
-          {/* Declaration Section */}
-          <div className="form-section mb-4">
-            <div className="section-header p-2">
-              <h5 className="mb-0">DECLARATION</h5>
-            </div>
-            <div className="section-content border border-top-0 p-3">
-              <p>I hereby declare that the information furnished above is true to the best of my knowledge and belief.</p>
-              <div className="row mt-4">
-                <div className="col-md-6">
-                  <div className="signature-box border p-2 text-center">
-                    <p className="mb-0">Applicant's Signature</p>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="date-box border p-2 text-center">
-                    <p className="mb-0">Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                  </div>
-                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -506,7 +570,11 @@ const RegistrationPreview = ({
           padding-top: 0.375rem;
           padding-bottom: 0.375rem;
           min-height: calc(1.5em + 0.75rem + 2px);
-          border-bottom: 1px dotted #ced4da;
+          border-bottom: 1px dotted #000;
+        }
+        
+        .min-height-100 {
+          min-height: 100px;
         }
         
         .certificate-preview-container {
@@ -540,6 +608,16 @@ const RegistrationPreview = ({
         
         .z-index-9999 {
           z-index: 9999;
+        }
+        
+        .font-weight-bold {
+          font-weight: bold;
+        }
+        
+        .photo-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
       `}</style>
     </>

@@ -95,7 +95,7 @@ function NavBar() {
                   <span>{company.email}</span>
                 </div>
                 <div className="d-flex align-items-center">
-                  <FaPhone className="me-2" />
+                  {/* <FaPhone className="me-2" /> */}
                   <span>{company.phone}</span>
                 </div>
               </div>

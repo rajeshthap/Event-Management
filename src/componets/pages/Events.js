@@ -119,77 +119,87 @@ function Events() {
   };
 
   // FIXED: Updated registerForEvent function with proper error handling
-  const registerForEvent = async (eventId, userIdParam = null) => {
-    const currentUserId = userIdParam || userId;
+ // FIXED: Updated registerForEvent function with proper error handling
+const registerForEvent = async (eventId, userIdParam = null) => {
+  const currentUserId = userIdParam || userId;
+  
+  if (!currentUserId) {
+    setShowEmailModal(true);
+    setPendingEventId(eventId);
+    return;
+  }
+
+  setRegisteringForEvent(eventId);
+  setRegistrationMessage('');
+
+  try {
+    const payload = {
+      event_id: eventId,
+      user_id: currentUserId
+    };
     
-    if (!currentUserId) {
-      setShowEmailModal(true);
-      setPendingEventId(eventId);
-      return;
-    }
+    console.log('Sending registration payload:', payload);
+    
+    const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      mode: 'cors',
+      body: JSON.stringify(payload)
+    });
 
-    setRegisteringForEvent(eventId);
-    setRegistrationMessage('');
-
+    const responseText = await response.text();
+    let data;
+    
     try {
-      const payload = {
-        event_id: eventId,
-        user_id: currentUserId
-      };
-      
-      console.log('Sending registration payload:', payload);
-      
-      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        mode: 'cors',
-        body: JSON.stringify(payload)
-      });
-
-      const responseText = await response.text();
-      let data;
-      
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Registration response is not valid JSON:', responseText.substring(0, 200));
-        throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Registration response is not valid JSON:', responseText.substring(0, 200));
+      throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
+    }
+    
+    console.log('Registration response:', data);
+    
+    if (!response.ok) {
+      let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+      if (data.message) {
+        errorMessage = data.message;
+      } else if (data.error) {
+        errorMessage = data.error;
+      } else if (data.detail) {
+        errorMessage = data.detail;
+      } else if (data.non_field_errors) {
+        errorMessage = Array.isArray(data.non_field_errors) 
+          ? data.non_field_errors.join(', ') 
+          : data.non_field_errors;
       }
-      
-      console.log('Registration response:', data);
-      
-      if (!response.ok) {
-        let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-        if (data.message) {
-          errorMessage = data.message;
-        } else if (data.error) {
-          errorMessage = data.error;
-        } else if (data.detail) {
-          errorMessage = data.detail;
-        } else if (data.non_field_errors) {
-          errorMessage = Array.isArray(data.non_field_errors) 
-            ? data.non_field_errors.join(', ') 
-            : data.non_field_errors;
-        }
-        throw new Error(errorMessage);
-      }
-      
-      setRegistrationMessage('Successfully registered for the event!');
-      setMessageContent('Successfully registered for the event!');
-      setShowMessageModal(true);
-      console.log('Registration successful:', data);
-    } catch (err) {
-      console.error('Error registering for event:', err);
+      throw new Error(errorMessage);
+    }
+    
+    setRegistrationMessage('Successfully registered for the event!');
+    setMessageContent('Successfully registered for the event!');
+    setShowMessageModal(true);
+    console.log('Registration successful:', data);
+  } catch (err) {
+    console.error('Error registering for event:', err);
+    
+    // Check if this is the "already participated" error
+    if (err.message && err.message.includes('You have already participated in this event')) {
+      setRegistrationMessage(err.message);
+      setMessageContent(err.message);
+    } else {
+      // For other errors, keep the prefix
       setRegistrationMessage('Error registering for event: ' + err.message);
       setMessageContent('Error registering for event: ' + err.message);
-      setShowMessageModal(true);
-    } finally {
-      setRegisteringForEvent(null);
     }
-  };
+    
+    setShowMessageModal(true);
+  } finally {
+    setRegisteringForEvent(null);
+  }
+};
 
   const handleRegisterClick = (eventId) => {
     setPendingEventId(eventId);
