@@ -100,6 +100,7 @@ function EntertainmentEvents() {
 
   return (
     <div>
+       <div class="gallery-banner"><div class="site-breadcrumb-wpr"><h2 class="breadcrumb-title">Our Entertainment</h2><ul class="breadcrumb-menu clearfix" type="none"><li><a class="breadcrumb-home" href="/" data-discover="true">Home</a></li><li>/</li><li><a class="breadcrumb-about" href="/" data-discover="true">Entertainment</a></li></ul></div></div>
         <Container className='box-shadow'>
       <section id="entertainment-events" className="about section-gallery">
         <div className="container" data-aos="fade-up" data-aos-delay="100">

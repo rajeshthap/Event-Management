@@ -215,6 +215,35 @@ body {
 .testimonial-slider .swiper-button-next::after {
   font-size: 20px; /* Adjust arrow size */
 }
+.modal-p p{
+  color: black;
+  font-weight: 600;
+}
+.event-cancel-right{
+  margin-right: 12px;
+}
 .Login-page h1{
   
+}
+/* Mobile dropdown styles */
+@media (max-width: 991.98px) {
+  .navmenu ul li.dropdown > ul {
+    display: none;
+    position: static;
+    box-shadow: none;
+    width: 100%;
+    padding-left: 20px;
+  }
+  
+  .navmenu ul li.dropdown.dropdown-active > ul {
+    display: block;
+  }
+  
+  .navmenu ul li.dropdown > a i.toggle-dropdown {
+    transition: transform 0.3s;
+  }
+  
+  .navmenu ul li.dropdown > a i.rotate-icon {
+    transform: rotate(180deg);
+  }
 }

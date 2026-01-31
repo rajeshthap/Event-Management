@@ -122,7 +122,7 @@ function Footer() {
       <div className="container copyright text-center mt-4">
         <p>© <span>{currentYear}</span> <strong className="px-1 sitename">Br Events</strong> <span>All Rights Reserved</span></p>
         <div className="credits">
-          Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+          Designed by <a href="https://brainrock.in/">Brainrock</a>
         </div>
       </div>
     </footer>

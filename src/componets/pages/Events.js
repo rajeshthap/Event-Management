@@ -10,6 +10,8 @@ function Events() {
   const [error, setError] = useState(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false); // Modal for showing messages
+  const [messageContent, setMessageContent] = useState(''); // Content for the message modal
   const [userEmail, setUserEmail] = useState('');
   const [userId, setUserId] = useState(null);
   const [checkingUser, setCheckingUser] = useState(false);
@@ -17,8 +19,8 @@ function Events() {
   const [registrationMessage, setRegistrationMessage] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // For filtering events
   const [pendingEventId, setPendingEventId] = useState(null); // Store event ID if registration is pending
-  const [registeredEvents, setRegisteredEvents] = useState([]); // Store events user has registered for
   const [isRegistrationActive, setIsRegistrationActive] = useState(false); // Track if registration is active
+  const [userVerified, setUserVerified] = useState(false); // Track if user is verified
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -61,44 +63,11 @@ function Events() {
     fetchEvents();
   }, []);
 
-  const fetchRegisteredEvents = async (userId) => {
-    try {
-      const response = await fetch(`https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/?user_id=${userId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        mode: 'cors'
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-      }
-
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Registered events response is not valid JSON:', responseText.substring(0, 200));
-        return [];
-      }
-
-      if (data.success && Array.isArray(data.data)) {
-        return data.data.map(registration => registration.event_id);
-      }
-      return [];
-    } catch (err) {
-      console.error('Error fetching registered events:', err);
-      return [];
-    }
-  };
-
+  // Updated checkUserExists to return user ID
   const checkUserExists = async (email) => {
     if (!email) {
       setError('Please enter your email address');
-      return false;
+      return { exists: false, userId: null };
     }
 
     setCheckingUser(true);
@@ -117,7 +86,7 @@ function Events() {
       if (!response.ok) {
         if (response.status === 404) {
           setUserId(null);
-          return false;
+          return { exists: false, userId: null };
         }
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
@@ -133,24 +102,27 @@ function Events() {
       
       if (data.user_id) {
         setUserId(data.user_id);
-        const userRegisteredEvents = await fetchRegisteredEvents(data.user_id);
-        setRegisteredEvents(userRegisteredEvents);
-        return true;
+        setUserVerified(true);
+        return { exists: true, userId: data.user_id };
       } else {
         setUserId(null);
-        return false;
+        setUserVerified(false);
+        return { exists: false, userId: null };
       }
     } catch (err) {
       console.error('Error checking user:', err);
       setError('Error checking user: ' + err.message);
-      return false;
+      return { exists: false, userId: null };
     } finally {
       setCheckingUser(false);
     }
   };
 
-  const registerForEvent = async (eventId) => {
-    if (!userId) {
+  // FIXED: Updated registerForEvent function with proper error handling
+  const registerForEvent = async (eventId, userIdParam = null) => {
+    const currentUserId = userIdParam || userId;
+    
+    if (!currentUserId) {
       setShowEmailModal(true);
       setPendingEventId(eventId);
       return;
@@ -160,6 +132,13 @@ function Events() {
     setRegistrationMessage('');
 
     try {
+      const payload = {
+        event_id: eventId,
+        user_id: currentUserId
+      };
+      
+      console.log('Sending registration payload:', payload);
+      
       const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/', {
         method: 'POST',
         headers: {
@@ -167,20 +146,20 @@ function Events() {
           'Content-Type': 'application/json'
         },
         mode: 'cors',
-        body: JSON.stringify({
-          event_id: eventId,
-          user_id: userId
-        })
+        body: JSON.stringify(payload)
       });
 
       const responseText = await response.text();
       let data;
+      
       try {
         data = JSON.parse(responseText);
       } catch (e) {
         console.error('Registration response is not valid JSON:', responseText.substring(0, 200));
         throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
       }
+      
+      console.log('Registration response:', data);
       
       if (!response.ok) {
         let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
@@ -190,18 +169,23 @@ function Events() {
           errorMessage = data.error;
         } else if (data.detail) {
           errorMessage = data.detail;
+        } else if (data.non_field_errors) {
+          errorMessage = Array.isArray(data.non_field_errors) 
+            ? data.non_field_errors.join(', ') 
+            : data.non_field_errors;
         }
         throw new Error(errorMessage);
       }
       
       setRegistrationMessage('Successfully registered for the event!');
+      setMessageContent('Successfully registered for the event!');
+      setShowMessageModal(true);
       console.log('Registration successful:', data);
-      if (!registeredEvents.includes(eventId)) {
-        setRegisteredEvents(prev => [...prev, eventId]);
-      }
     } catch (err) {
       console.error('Error registering for event:', err);
       setRegistrationMessage('Error registering for event: ' + err.message);
+      setMessageContent('Error registering for event: ' + err.message);
+      setShowMessageModal(true);
     } finally {
       setRegisteringForEvent(null);
     }
@@ -209,13 +193,14 @@ function Events() {
 
   const handleRegisterClick = (eventId) => {
     setPendingEventId(eventId);
-    if (userId) {
+    if (userId && userVerified) {
       registerForEvent(eventId);
     } else {
       setShowEmailModal(true);
     }
   };
 
+  // Updated handleEmailSubmit to use the returned user ID
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     
@@ -224,13 +209,15 @@ function Events() {
       return;
     }
 
-    const userExists = await checkUserExists(userEmail);
+    const { exists, userId: returnedUserId } = await checkUserExists(userEmail);
     
-    if (userExists) {
+    if (exists) {
       setShowEmailModal(false);
-      setRegistrationMessage('Now you can apply for events');
+      setMessageContent('Now you can apply for events');
+      setShowMessageModal(true);
+      
       if (pendingEventId) {
-        registerForEvent(pendingEventId);
+        registerForEvent(pendingEventId, returnedUserId);
         setPendingEventId(null);
       }
     } else {
@@ -241,36 +228,38 @@ function Events() {
   };
 
   const handleCheckEmail = async () => {
-    const userExists = await checkUserExists(userEmail);
+    const { exists } = await checkUserExists(userEmail);
     
-    if (userExists) {
-      setRegistrationMessage('Now you can apply for events');
+    if (exists) {
+      setMessageContent('Now you can apply for events');
+      setShowMessageModal(true);
     } else {
       setShowRegistrationModal(true);
     }
   };
 
+  // Updated handleRegistrationSuccess to use the returned user ID
   const handleRegistrationSuccess = (userData) => {
     setUserEmail(userData.email);
     setShowRegistrationModal(false);
     setIsRegistrationActive(false);
-    setRegistrationMessage('Now you can apply for events');
+    setMessageContent('Registration successful! Now you can apply for events.');
+    setShowMessageModal(true);
     
-    // Since we don't have user_id from Registration component, we need to fetch it
-    checkUserExists(userData.email);
+    // Check if user exists and get the user ID
+    const checkAndRegister = async () => {
+      const { exists, userId: returnedUserId } = await checkUserExists(userData.email);
+      
+      if (exists && pendingEventId) {
+        registerForEvent(pendingEventId, returnedUserId);
+        setPendingEventId(null);
+      }
+    };
     
-    if (pendingEventId) {
-      // We need to wait for checkUserExists to complete first
-      setTimeout(() => {
-        if (userId) {
-          registerForEvent(pendingEventId);
-          setPendingEventId(null);
-        }
-      }, 1000);
-    }
+    checkAndRegister();
   };
 
-  // --- UPDATED: Improved date formatting function ---
+  // Improved date formatting function
   const formatDate = (dateString) => {
     if (!dateString) return { day: 'N/A', monthYear: 'N/A' };
     
@@ -361,13 +350,13 @@ function Events() {
   }
 
   return (
+    <div>
     <Container className='box-shadow'>
       <section id="events" className="events section-gallery">
-        {registrationMessage && (
-          <div className="container  mb-4">
-          
-
-            <div className={`alert ${registrationMessage.includes('Successfully') ? 'alert-success' : 'alert-info'}`} role="alert">
+        {/* Only show registration message for successful registration */}
+        {registrationMessage && registrationMessage.includes('Successfully') && (
+          <div className="container mb-4">
+            <div className="alert alert-success" role="alert">
               {registrationMessage}
             </div>
           </div>
@@ -375,9 +364,9 @@ function Events() {
 
         <div className="container" data-aos="fade-up" data-aos-delay="100">
           <div className="row section-title g-4">
-              <h2>Events</h2>
+             
             {filteredEvents.map((event, index) => {
-              // --- UPDATED: Using the new formatDate function ---
+              // Using the new formatDate function
               const { day, monthYear } = formatDate(event.event_date_time);
               const time = formatTime(event.event_date_time);
               const status = getStatusBadge(event);
@@ -388,8 +377,8 @@ function Events() {
                   <div className={`event-item ${status.className}`}>
                     <div className="event-header">
                       <div className="event-date-overlay">
-                        {/* --- UPDATED: Displaying the new date format --- */}
-                        <span className="date">{day}{monthYear}</span>
+                        {/* Fixed: Added space between day and monthYear */}
+                        <span className="date">{day} {monthYear}</span>
                       </div>
                       <div className="event-status-badge">
                         <span className={`badge ${status.className}`}>{status.text}</span>
@@ -405,7 +394,7 @@ function Events() {
                       <h3>{event.event_name}</h3>
                       <p>{event.description}</p>
                       <div className="event-info">
-                        {/* --- UPDATED: Added a clear display for the event type --- */}
+                        {/* Added a clear display for the event type */}
                         <div className="info-row">
                           <i className="bi bi-tag"></i>
                           <span>Type: {event.event_type || 'General'}</span>
@@ -420,11 +409,9 @@ function Events() {
                           <button 
                             className="register-btn"
                             onClick={() => handleRegisterClick(event.event_id)}
-                            disabled={registeringForEvent === event.event_id || registeredEvents.includes(event.event_id)}
+                            disabled={registeringForEvent === event.event_id}
                           >
-                            {registeredEvents.includes(event.event_id) 
-                              ? 'Already Registered' 
-                              : (registeringForEvent === event.event_id ? 'Registering...' : 'Register Now')}
+                            {registeringForEvent === event.event_id ? 'Registering...' : 'Register Now'}
                           </button>
                         )}
                         {event.is_past && (
@@ -501,7 +488,7 @@ function Events() {
               </Form.Text>
             </Form.Group>
             <div className="d-flex justify-content-end">
-              <Button variant="secondary" onClick={() => setShowEmailModal(false)}>
+              <Button variant="secondary" className="event-cancel-right" onClick={() => setShowEmailModal(false)}>
                 Cancel
               </Button>
               <Button variant="primary" type="submit" disabled={checkingUser}>
@@ -512,6 +499,21 @@ function Events() {
         </Modal.Body>
       </Modal>
 
+      {/* Message Modal */}
+      <Modal show={showMessageModal} onHide={() => setShowMessageModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Information</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className='modal-p'>
+          <p>{messageContent}</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setShowMessageModal(false)}>
+            OK
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       {showRegistrationModal && (
         <Registration 
           email={userEmail}
@@ -519,6 +521,7 @@ function Events() {
         />
       )}
     </Container>
+    </div>
   );
 }
 

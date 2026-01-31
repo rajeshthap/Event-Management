@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Adjust path if necessary
-import LoginImg from "../../assets/images/hero-area.jpg";
+import LoginImg from "../../assets/images/login-img.jpg";
 import { Button, Alert, Form } from 'react-bootstrap';
 
 const Login = () => {

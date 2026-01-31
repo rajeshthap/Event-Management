@@ -1,10 +1,16 @@
-// src/components/RegistrationPreview.js
 import React, { useState } from 'react';
-import { Image, Badge, Button } from 'react-bootstrap';
-import { FaPrint, FaTimes } from 'react-icons/fa';
+import { Image, Badge, Alert, Button } from 'react-bootstrap';
+import { FaTimes } from 'react-icons/fa';
 import '../../assets/css/registration.css';
+import Logo from "../../assets/images/br-event-logo.png"
 
-const RegistrationPreview = ({ formData, certificateUrls, alreadyRegisteredMessage, phoneAlreadyRegisteredMessage }) => {
+const RegistrationPreview = ({ 
+  formData, 
+  certificateUrls, 
+  alreadyRegisteredMessage, 
+  phoneAlreadyRegisteredMessage,
+  isVerified = false
+}) => {
   // State for full-screen certificate preview
   const [fullscreenPreview, setFullscreenPreview] = useState({
     isOpen: false,
@@ -46,335 +52,21 @@ const RegistrationPreview = ({ formData, certificateUrls, alreadyRegisteredMessa
     });
   };
 
-  // Function to handle opening the print preview in a new tab
-  const handlePrintPreview = () => {
-    // Get the current date
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    // Create the HTML content for printing
-    const printContent = `
-      <html>
-        <head>
-          <title>Registration Preview</title>
-          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-          <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              color: #333;
-              padding: 8px 50px 50px 50px;
-              line-height: 1.6;
-            }
-
-            .print-header-container {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 20px;
-              border-bottom: 2px solid #dee2e6;
-              padding-bottom: 15px;
-            }
-            
-            .print-date {
-              font-style: italic;
-              flex: 1;
-            }
-            
-            .print-header {
-              text-align: center;
-              flex: 1;
-            }
-            
-            .print-title {
-              font-weight: bold;
-              font-size: 22px;
-              margin-bottom: 5px;
-              text-transform: uppercase;
-            }
-            
-            .print-subtitle {
-              font-size: 16px;
-              color: #6c757d;
-            }
-            
-            .print-button-container {
-              flex: 1;
-              text-align: right;
-            }
-            
-            .print-button {
-             background-color: #007bff;
-              color: white;
-              font-size: 12px;
-              border: none;
-              padding: 10px 20px;
-              border-radius: 5px;
-              cursor: pointer;
-              font-size: 16px;
-              box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-              transition: background-color 0.3s;
-            }
-            
-            .print-button:hover {
-              background-color: #0056b3;
-            }
-            
-            .section-header {
-              background-color: #f8f9fa !important;
-              font-weight: bold !important;
-            
-              text-transform: uppercase;
-              font-size: 0.9rem;
-            }
-            
-            .table {
-              border: 2px solid #dee2e6;
-              margin-bottom: 20px;
-            }
-            
-            .table td {
-              padding: 12px;
-              vertical-align: middle;
-              border: 1px solid #dee2e6;
-            }
-            
-            .certificate-preview-image {
-              max-width: 130px;
-              height: 130px;
-              object-fit: cover;
-            }
-            
-            .pdf-preview {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              padding: 10px;
-              border: 1px solid #dee2e6;
-              border-radius: 4px;
-            }
-            
-            .badge.t-style {
-              background-color: #e9ecef !important;
-              color: #000 !important;
-              font-weight: 500 !important;
-            }
-            
-            @media print {
-              .print-button-container {
-                display: none !important;
-              }
-              .print-header-container {
-                display: block;
-                text-align: center;
-              }
-              .print-date {
-                text-align: right;
-                margin-bottom: 10px;
-              }
-              body {
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
-              }
-              .page-break {
-                page-break-before: always;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="print-header-container">
-            <div class="print-date">Printed on: ${currentDate}</div>
-            <div class="print-header">
-              <div class="print-title">Registration Preview</div>
-              <div class="print-subtitle">${formData.user_type === 'individual' ? 'Individual' : 'Organization'} Registration Details</div>
-            </div>
-            <div class="print-button-container">
-              <button class="print-button" onclick="window.print()">
-                <i class="bi bi-printer-fill me-2"></i>Print
-              </button>
-            </div>
-          </div>
-          
-          <table class="table table-bordered">
-            <tbody>
-              <!-- User Type Section -->
-              <tr class="section-header">
-                <td colspan="2">User Type</td>
-              </tr>
-              <tr>
-                <td width="30%" style="font-weight: bold;">Type:</td>
-                <td>${formData.user_type}</td>
-              </tr>
-               ${formData.user_type === 'team' ? `
-              <tr>
-                <td style="font-weight: bold;">Team Name:</td>
-                <td>${formData.team_name}</td>
-              </tr>
-              ` : ''}
-
-              <!-- Profile Information Section -->
-              <tr class="section-header">
-                <td colspan="2">Profile Information</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Profile Image:</td>
-                <td>
-                  ${formData.profile_image_preview ? 
-                    `<img src="${formData.profile_image_preview}" alt="Profile" class="rounded-circle certificate-preview-image">` : 
-                    '<div class="d-inline-block  bg-light rounded-circle" style="width: 100px; height: 100px; line-height: 100px;"><i class="bi bi-person" style="font-size: 2.5rem;"></i></div>'
-                  }
-                </td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Full Name:</td>
-                <td>${formData.full_name}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Gender:</td>
-                <td>${formData.gender}</td>
-              </tr>
-              ${formData.user_type === 'individual' ? `
-              <tr>
-                <td style="font-weight: bold;">Date of Birth:</td>
-                <td>${formData.date_of_birth}</td>
-              </tr>
-              ` : ''}
-
-              <!-- Contact Information Section -->
-              <tr class="section-header">
-                <td colspan="2">Contact Information</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Email:</td>
-                <td>${formData.email}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Phone:</td>
-                <td>${formData.phone}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Address:</td>
-                <td>${formData.address}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Location:</td>
-                <td>${formData.city}, ${formData.state}, ${formData.country}</td>
-              </tr>
-
-              <!-- Talent Scope Section -->
-              <tr class="section-header">
-                <td colspan="2">Talent Scope</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; vertical-align: top;">Talents:</td>
-                <td>
-                  ${formData.talent_scope.map(talent => `<span class="badge t-style me-2 mb-2 p-2">${talent}</span>`).join('')}
-                </td>
-              </tr>
-
-              <!-- Links Section -->
-              <tr class="section-header">
-                <td colspan="2">Links</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; vertical-align: top;">Social Media Links:</td>
-                <td>
-                  ${formData.social_media_links.filter(link => link).map(link => 
-                    `<p class="small mb-1">${link}</p>`
-                  ).join('')}
-                </td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; vertical-align: top;">Additional Links:</td>
-                <td>
-                  ${formData.additional_links.filter(link => link).map(link => 
-                    `<p class="small mb-1">${link}</p>`
-                  ).join('')}
-                </td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; vertical-align: top;">Portfolio Links:</td>
-                <td>
-                  ${formData.portfolio_links.filter(link => link).map(link => 
-                    `<p class="small mb-1">${link}</p>`
-                  ).join('')}
-                </td>
-              </tr>
-
-              <!-- Introduction Section -->
-              <tr class="section-header">
-                <td colspan="2">Introduction</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold; vertical-align: top;">About ${formData.user_type === 'individual' ? 'You' : 'Your Organization'}:</td>
-                <td>${formData.introduction}</td>
-              </tr>
-
-              <!-- Certificates Section -->
-              <tr class="section-header">
-                <td colspan="2">Certificates</td>
-              </tr>
-              <tr>
-                <td colspan="2">
-                  ${formData.selected_certificates.length > 0 ? `
-                    <table class="table table-sm">
-                      <thead>
-                        <tr>
-                          <th width="30%">Certificate Type</th>
-                          <th>Preview</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${formData.selected_certificates.map(certificateId => {
-                          const option = certificateOptions.find(opt => opt.id === certificateId);
-                          return `
-                            <tr>
-                              <td>${option.label}</td>
-                              <td>
-                                ${certificateUrls[certificateId] ? 
-                                  (certificateUrls[certificateId].startsWith('data:image/') ? 
-                                    `<img src="${certificateUrls[certificateId]}" alt="${certificateId}" class="certificate-preview-image border rounded">` :
-                                    `<div class="pdf-preview">
-                                      <i class="bi bi-file-earmark-pdf" style="font-size: 2.5rem; color: #dc3545;"></i>
-                                      <p class="mt-2 mb-0 small">PDF Certificate</p>
-                                    </div>`
-                                  ) : 
-                                  '<div class=" p-3"><i class="bi bi-file-earmark" style="font-size: 2.5rem;"></i><p class="mt-2 mb-0 small">Certificate uploaded</p></div>'
-                                }
-                              </td>
-                            </tr>
-                          `;
-                        }).join('')}
-                      </tbody>
-                    </table>
-                  ` : '<p>No certificates selected</p>'}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <div class=" mt-4">
-            <p class="small text-muted">This is a computer-generated document and does not require a signature.</p>
-          </div>
-        </body>
-      </html>
-    `;
-    
-    // Create a new window for the print preview
-    const printWindow = window.open('', '_blank');
-    
-    // Write the content to the new window
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-  };
-
   return (
     <>
-      <div className="registration-preview-container p-3">
+      <div className="government-form-preview">
+        {/* Official Header with Emblem */}
+        <div className="official-header text-center py-4 border-bottom border-dark">
+          <div className="d-flex justify-content-center mb-3">
+            <div className="emblem me-3">
+              <img src={Logo} alt="logo" className='img-fluid img-pdf-logo'></img>
+            </div>
+            <div className="text-start">
+              <p className="mb-0">REGISTRATION FORM</p>
+            </div>
+          </div>
+        </div>
+
         {/* Display already registered messages */}
         {alreadyRegisteredMessage && (
           <div className="alert alert-warning mb-3">
@@ -387,288 +79,313 @@ const RegistrationPreview = ({ formData, certificateUrls, alreadyRegisteredMessa
           </div>
         )}
         
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h4 className="mb-0">Registration Preview</h4>
-          <Button variant="primary" onClick={handlePrintPreview} className="no-print">
-            <FaPrint className="me-2" />
-            Print Preview
-          </Button>
-        </div>
+        {isVerified && (
+          <Alert variant="info" className="mb-3">
+            <i className="bi bi-info-circle me-2"></i>
+            You can save your registration from the previous preview page.
+          </Alert>
+        )}
 
-        <div className="table-responsive">
-          <table className="table table-bordered form-preview-table">
-            <tbody>
-              {/* User Type Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">User Type</td>
-              </tr>
-               <tr>
-                 <td width="30%" className="font-weight-bold">Type:</td>
-                 <td>
-                   <Badge bg="info">{formData.user_type === 'individual' ? 'Individual' : 'Organization'}</Badge>
-                 </td>
-               </tr>
-               {formData.user_type === 'team' && (
-                 <tr>
-                   <td className="font-weight-bold">Team Name:</td>
-                   <td>{formData.team_name}</td>
-                 </tr>
-               )}
+        <div className="form-content p-4">
+          {/* User Type Section */}
+          <div className="form-section mb-4">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 1: USER TYPE</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Type:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">
+                    <Badge bg="info">{formData.user_type === 'individual' ? 'Individual' : 'Organization'}</Badge>
+                  </div>
+                </div>
+              </div>
+              {formData.user_type === 'team' && (
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label">Team Name:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.team_name}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-              {/* Profile Information Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">Profile Information</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Profile Image:</td>
-                <td>
+          {/* Profile Information Section */}
+          <div className="form-section mb-4">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 2: PROFILE INFORMATION</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Profile Image:</label>
+                </div>
+                <div className="col-md-9">
                   {formData.profile_image_preview ? (
                     <Image
                       src={formData.profile_image_preview}
                       alt="Profile Preview"
-                      roundedCircle
-                      style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                      style={{ width: '100px', height: '120px', objectFit: 'cover', border: '1px solid #ccc' }}
                     />
                   ) : (
-                    <div className="profile-placeholder d-inline-flex align-items-center justify-content-center bg-light rounded-circle" 
-                         style={{ width: '100px', height: '100px' }}>
+                    <div className="photo-placeholder d-inline-flex align-items-center justify-content-center bg-light" 
+                         style={{ width: '100px', height: '120px', border: '1px solid #ccc' }}>
                       <i className="bi bi-person" style={{ fontSize: '2.5rem' }}></i>
                     </div>
                   )}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Full Name:</td>
-                <td>{formData.full_name}</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Gender:</td>
-                <td>{formData.gender}</td>
-              </tr>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Full Name:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.full_name}</div>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Gender:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.gender}</div>
+                </div>
+              </div>
               {formData.user_type === 'individual' && (
-                <tr>
-                  <td className="font-weight-bold">Date of Birth:</td>
-                  <td>{formData.date_of_birth}</td>
-                </tr>
+                <div className="row mb-3">
+                  <div className="col-md-3">
+                    <label className="form-label">Date of Birth:</label>
+                  </div>
+                  <div className="col-md-9">
+                    <div className="form-control-static">{formData.date_of_birth}</div>
+                  </div>
+                </div>
               )}
+            </div>
+          </div>
 
-              {/* Contact Information Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">Contact Information</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Email:</td>
-                <td>{formData.email}</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Phone:</td>
-                <td>{formData.phone}</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Address:</td>
-                <td>{formData.address}</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold">Location:</td>
-                <td>{`${formData.city}, ${formData.state}, ${formData.country}`}</td>
-              </tr>
+          {/* Contact Information Section */}
+          <div className="form-section mb-4">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 3: CONTACT INFORMATION</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Email:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.email}</div>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Phone:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.phone}</div>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Address:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.address}</div>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Location:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{`${formData.city}, ${formData.state}, ${formData.country}`}</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Talent Scope Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">Talent Scope</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold align-top">Talents:</td>
-                <td>
-                  <div className="d-flex flex-wrap">
+          {/* Talent Scope Section */}
+          <div className="form-section mb-4">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 4: TALENT SCOPE</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Talents:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">
                     {formData.talent_scope.map((talent, index) => (
-                      <Badge key={index} bg="light" text="dark" className="ms-2 mb-2 p-2" style={{ fontWeight: 500 }}>
+                      <Badge key={index} bg="light" text="dark" className="me-2 mb-2 p-2" style={{ fontWeight: 500 }}>
                         {talent}
                       </Badge>
                     ))}
                   </div>
-                </td>
-              </tr>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Links Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">Links</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold align-top">Social Media Links:</td>
-                <td>
-                  {formData.social_media_links.map((link, index) => (
-                    link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
-                  ))}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold align-top">Additional Links:</td>
-                <td>
-                  {formData.additional_links.map((link, index) => (
-                    link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
-                  ))}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold align-top">Portfolio Links:</td>
-                <td>
-                  {formData.portfolio_links.map((link, index) => (
-                    link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
-                  ))}
-                </td>
-              </tr>
+          {/* Links Section */}
+          <div className="form-section mb-4">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 5: LINKS</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Social Media Links:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">
+                    {formData.social_media_links.map((link, index) => (
+                      link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Additional Links:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">
+                    {formData.additional_links.map((link, index) => (
+                      link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Portfolio Links:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">
+                    {formData.portfolio_links.map((link, index) => (
+                      link && <p key={index} className="small mb-1"><a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{link}</a></p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Introduction Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">Introduction</td>
-              </tr>
-              <tr>
-                <td className="font-weight-bold align-top">About {formData.user_type === 'individual' ? 'You' : 'Your Organization'}:</td>
-                <td>{formData.introduction}</td>
-              </tr>
+          {/* Introduction Section */}
+          <div className="form-section mb-4">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 6: INTRODUCTION</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">About {formData.user_type === 'individual' ? 'You' : 'Your Organization'}:</label>
+                </div>
+                <div className="col-md-9">
+                  <div className="form-control-static">{formData.introduction}</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Certificates Section */}
-              <tr className="section-header">
-                <td colSpan="2" className=" bg-light font-weight-bold">Certificates</td>
-              </tr>
-              <tr>
-                <td colSpan="2">
-                  {formData.selected_certificates.length > 0 ? (
-                    <table className="table table-sm">
-                      <thead>
-                        <tr>
-                          <th width="30%">Certificate Type</th>
-                          <th>Preview</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {formData.selected_certificates.map((certificateId, index) => {
-                          const option = certificateOptions.find(opt => opt.id === certificateId);
-                          
-                          return (
-                            <tr key={certificateId}>
-                              <td>{option.label}</td>
-                              <td>
-                                <div 
-                                  className="certificate-preview-container cursor-pointer d-inline-block"
-                                  onClick={() => openCertificateFullscreen(certificateId)}
-                                  title="Click to view in full screen"
-                                >
-                                  {certificateUrls[certificateId] ? (
-                                    certificateUrls[certificateId].startsWith('data:image/') ? (
-                                      <div className="position-relative">
-                                        <Image
-                                          src={certificateUrls[certificateId]}
-                                          alt={certificateId}
-                                          className="certificate-preview-image border rounded"
-                                          style={{ 
-                                            maxHeight: '120px', 
-                                            maxWidth: '200px',
-                                            objectFit: 'cover',
-                                            transition: 'transform 0.2s',
-                                            cursor: 'pointer'
-                                          }}
-                                          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                                          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                        />
-                                        <div className="certificate-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0 hover-opacity-100 transition-opacity">
-                                          <div className="bg-dark bg-opacity-75 text-white p-2 rounded ">
-                                            <i className="bi bi-eye-fill d-block mb-1"></i>
-                                            <small>View Full Screen</small>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="pdf-preview border rounded p-3 d-inline-flex flex-column align-items-center" 
-                                           style={{ 
-                                             cursor: 'pointer',
-                                             transition: 'transform 0.2s'
-                                           }}
-                                           onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                                           onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                        <i className="bi bi-file-earmark-pdf" style={{ fontSize: '2.5rem', color: '#dc3545' }}></i>
-                                        <p className="mt-2 mb-0 small">PDF Certificate</p>
-                                        <small className="">Click to view full screen</small>
-                                      </div>
-                                    )
-                                  ) : (
-                                    <div className="border rounded p-3 d-inline-flex flex-column align-items-center">
-                                      <i className="bi bi-file-earmark" style={{ fontSize: '2.5rem' }}></i>
-                                      <p className="mt-2 mb-0 small">Certificate uploaded</p>
+          {/* Certificates Section */}
+          <div className="form-section mb-4 certificates-section">
+            <div className="section-header text-white p-2">
+              <h5 className="mb-0">SECTION 7: CERTIFICATES</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              {formData.selected_certificates.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th width="30%">Certificate Type</th>
+                        <th>Preview</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formData.selected_certificates.map((certificateId, index) => {
+                        const option = certificateOptions.find(opt => opt.id === certificateId);
+                        
+                        return (
+                          <tr key={certificateId}>
+                            <td>{option.label}</td>
+                            <td>
+                              <div 
+                                className="certificate-preview-container d-inline-block"
+                                onClick={() => openCertificateFullscreen(certificateId)}
+                                title="Click to view in full screen"
+                              >
+                                {certificateUrls[certificateId] ? (
+                                  certificateUrls[certificateId].startsWith('data:image/') ? (
+                                    <div className="position-relative">
+                                      <Image
+                                        src={certificateUrls[certificateId]}
+                                        alt={certificateId}
+                                        className="certificate-preview-image border"
+                                        style={{ 
+                                          maxHeight: '120px', 
+                                          maxWidth: '200px',
+                                          objectFit: 'cover'
+                                        }}
+                                      />
                                     </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p className="">No certificates selected</p>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                                  ) : (
+                                    <div className="pdf-preview border p-3 d-inline-flex flex-column align-items-center">
+                                      <i className="bi bi-file-earmark-pdf" style={{ fontSize: '2.5rem', color: '#dc3545' }}></i>
+                                      <p className="mt-2 mb-0 small">PDF Certificate</p>
+                                    </div>
+                                  )
+                                ) : (
+                                  <div className="border p-3 d-inline-flex flex-column align-items-center">
+                                    <i className="bi bi-file-earmark" style={{ fontSize: '2.5rem' }}></i>
+                                    <p className="mt-2 mb-0 small">Certificate uploaded</p>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center">No certificates selected</p>
+              )}
+            </div>
+          </div>
+
+          {/* Declaration Section */}
+          <div className="form-section mb-4">
+            <div className="section-header p-2">
+              <h5 className="mb-0">DECLARATION</h5>
+            </div>
+            <div className="section-content border border-top-0 p-3">
+              <p>I hereby declare that the information furnished above is true to the best of my knowledge and belief.</p>
+              <div className="row mt-4">
+                <div className="col-md-6">
+                  <div className="signature-box border p-2 text-center">
+                    <p className="mb-0">Applicant's Signature</p>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="date-box border p-2 text-center">
+                    <p className="mb-0">Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <style jsx>{`
-          .form-preview-header {
-            border-bottom: 2px solid #dee2e6;
-            padding-bottom: 15px;
-          }
-          
-          .form-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-          }
-          
-          .form-subtitle {
-            font-size: 0.9rem;
-            color: #6c757d;
-          }
-          
-          .form-preview-table {
-            border: 2px solid #dee2e6;
-          }
-          
-          .form-preview-table td {
-            padding: 12px;
-            vertical-align: middle;
-          }
-          
-          .section-header td {
-            font-weight: bold;
-            padding: 8px;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-          }
-          
-          .certificate-overlay {
-            pointer-events: none;
-          }
-          
-          .hover-opacity-100:hover {
-            opacity: 1 !important;
-          }
-          
-          .transition-opacity {
-            transition: opacity 0.2s ease-in-out;
-          }
-          
-          .cursor-pointer {
-            cursor: pointer;
-          }
-          
-          @media print {
-            .no-print {
-              display: none !important;
-            }
-          }
-        `}</style>
       </div>
 
       {/* Full-screen Certificate Preview */}
@@ -678,7 +395,7 @@ const RegistrationPreview = ({ formData, certificateUrls, alreadyRegisteredMessa
             <h4 className="mb-0">{fullscreenPreview.certificateLabel}</h4>
             <div>
               <Button variant="outline-secondary" className="me-2" onClick={() => window.print()}>
-                <FaPrint className="me-1" /> Print
+                <i className="bi bi-printer me-1" /> Print
               </Button>
               <Button variant="outline-danger" onClick={closeFullscreenPreview}>
                 <FaTimes /> Close
@@ -710,6 +427,105 @@ const RegistrationPreview = ({ formData, certificateUrls, alreadyRegisteredMessa
       )}
 
       <style jsx>{`
+        .government-form-preview {
+          font-family: 'Times New Roman', serif;
+          background-color: #f8f9fa;
+          margin: 0 auto;
+          box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+          
+          .form-section {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          
+          .certificates-section {
+            page-break-before: always;
+            break-before: page;
+          }
+          
+          .government-form-preview {
+            box-shadow: none;
+          }
+        }
+        
+        .official-header {
+          background-color: #f5f5f5;
+        }
+        
+        .emblem {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .document-id {
+          font-size: 0.9rem;
+          color: #495057;
+        }
+        
+        .img-pdf-logo {
+          width: 30px;
+          background-color: black;
+          border-radius: 35px;
+        }
+        
+        .form-section h5 {
+          color: black;
+          font-weight: 700;
+        }
+        
+        .form-section {
+          margin-bottom: 2rem;
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        
+        .certificates-section {
+          page-break-before: always;
+          break-before: page;
+        }
+        
+        .section-header {
+          border-top-left-radius: 0.25rem;
+          border-top-right-radius: 0.25rem;
+        }
+        
+        .section-content {
+          background-color: white;
+          border-bottom-left-radius: 0.25rem;
+          border-bottom-right-radius: 0.25rem;
+        }
+        
+        .form-control-static {
+          padding-top: 0.375rem;
+          padding-bottom: 0.375rem;
+          min-height: calc(1.5em + 0.75rem + 2px);
+          border-bottom: 1px dotted #ced4da;
+        }
+        
+        .certificate-preview-container {
+          cursor: pointer;
+        }
+        
+        .signature-box, .date-box {
+          min-height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .official-footer {
+          background-color: #f5f5f5;
+          font-size: 0.85rem;
+          color: #6c757d;
+        }
+        
         .fullscreen-certificate-preview {
           z-index: 9999;
         }

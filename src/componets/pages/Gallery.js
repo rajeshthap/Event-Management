@@ -58,7 +58,8 @@ function Gallery() {
 
   return (
     <>
-    <div class="gallery-banner"><div class="site-breadcrumb-wpr"><h2 class="breadcrumb-title">Our Gallery</h2><ul class="breadcrumb-menu clearfix "type="none"><li><a class="breadcrumb-home" href="/" data-discover="true">Home</a></li><li class="px-2">/</li><li><a class="breadcrumb-about" href="/" data-discover="true">Gallery</a></li></ul></div></div>
+    <div class="gallery-banner"><div class="site-breadcrumb-wpr"><h2 class="breadcrumb-title">Our Gallery</h2><ul class="breadcrumb-menu clearfix" type="none"><li><a class="breadcrumb-home" href="/" data-discover="true">Home</a></li><li>/</li><li><a class="breadcrumb-about" href="/" data-discover="true">Gallery</a></li></ul></div></div>
+
     <Container className='box-shadow'>
       <main className="main">
        

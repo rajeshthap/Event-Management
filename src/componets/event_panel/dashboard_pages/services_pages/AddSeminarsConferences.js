@@ -172,7 +172,7 @@ const AddSeminarsConferences = () => {
           <DashBoardHeader toggleSidebar={toggleSidebar} />
 
           <Container fluid className="dashboard-body dashboard-main-container">
-            <h1 className="page-title">Add Corporate Event Service Item</h1>
+            <h1 className="page-title">Add Seminars Conferences Event Service Item</h1>
             
             <Row className="justify-content-center">
               <Col md={12} lg={12}>

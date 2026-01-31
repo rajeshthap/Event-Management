@@ -138,6 +138,8 @@ function Contact() {
   };
 
   return (
+    <div>
+<div class="gallery-banner"><div class="site-breadcrumb-wpr"><h2 class="breadcrumb-title">Get In Touch</h2><ul class="breadcrumb-menu clearfix" type="none"><li><a class="breadcrumb-home" href="/" data-discover="true">Home</a></li><li>/</li><li><a class="breadcrumb-about" href="/" data-discover="true">Get In Touch</a></li></ul></div></div>
     <Container className="py-5 box-shadow">
      
       
@@ -405,6 +407,7 @@ function Contact() {
         }
       `}</style>
     </Container>
+    </div>
   );
 }
 

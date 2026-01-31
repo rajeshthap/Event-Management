@@ -36,6 +36,7 @@ import UserHeader from "../UserHeader";
 import UserLeftNav from "../UserLeftNav";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthFetch } from "../../context/AuthFetch";
+import FooterDashBoard from "../../footer/FooterDashBoard";
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -561,7 +562,7 @@ const UserProfile = () => {
                             name="email"
                             value={editFormData.email || ''}
                             onChange={handleInputChange}
-                            disabled={!isEditMode}
+                            disabled
                           />
                         </Form.Group>
 
@@ -572,7 +573,7 @@ const UserProfile = () => {
                             name="phone"
                             value={editFormData.phone || ''}
                             onChange={handleInputChange}
-                            disabled={!isEditMode}
+                            disabled
                           />
                         </Form.Group>
 
@@ -977,6 +978,7 @@ const UserProfile = () => {
             </Col>
           </div>
         </Container>
+          <FooterDashBoard />
       </div>
     </div>
   );

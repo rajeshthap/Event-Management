@@ -291,62 +291,6 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
     return Object.keys(newErrors).length === 0;
   };
 
-  // Check if email is already registered but not verified
-  const checkEmailStatus = async (email) => {
-    // Don't check if email is empty or invalid
-    if (!email || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
-      setEmailNotVerified(false);
-      return;
-    }
-    
-    setCheckingEmail(true);
-    setApiError('');
-    
-    try {
-      // API call to check email status
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/check-email-status/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: email
-        }),
-        signal: controller.signal,
-        mode: 'cors'
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        // If the endpoint doesn't exist or returns an error, just continue
-        setEmailNotVerified(false);
-        return;
-      }
-      
-      const data = await response.json();
-      
-      // If email is registered but not verified, show the verification link
-      if (data.registered && !data.verified) {
-        setEmailNotVerified(true);
-        setRegisteredEmail(email);
-      } else {
-        setEmailNotVerified(false);
-      }
-      
-    } catch (error) {
-      // If there's an error (like the endpoint doesn't exist), just continue
-      console.log('Error checking email status:', error);
-      setEmailNotVerified(false);
-    } finally {
-      setCheckingEmail(false);
-    }
-  };
-
   // Live validation for individual fields
   const validateField = (name, value) => {
     let error = '';
@@ -516,13 +460,6 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
       // Clear previous messages
       setAlreadyRegisteredMessage('');
       setEmailNotVerified(false);
-      
-      // Check email status after a short delay to avoid too many API calls
-      const timer = setTimeout(() => {
-        checkEmailStatus(processedValue);
-      }, 500);
-      
-      return () => clearTimeout(timer);
     }
   };
 
@@ -560,8 +497,6 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
     // Clear user type error
     setUserTypeError('');
   };
-
-
 
   // Handle verification code change
   const handleVerificationCodeChange = (e) => {
@@ -886,75 +821,308 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
     e.preventDefault();
     
     if (validateForm()) {
-      // Check email and phone number status before showing preview
-      setCheckingEmail(true);
-      setAlreadyRegisteredMessage('');
-      setPhoneAlreadyRegisteredMessage('');
-      
-      try {
-        // Check email status
-        await checkEmailStatus(formData.email);
-        
-        // Check phone number status
-        const phoneResponse = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/check-phone-status/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            phone: formData.phone
-          }),
-          mode: 'cors'
-        });
-        
-        if (phoneResponse.ok) {
-          const phoneData = await phoneResponse.json();
-          if (phoneData.registered) {
-            setPhoneAlreadyRegisteredMessage('Phone number already registered.');
-          }
-        }
-        
-        // Check if email is already registered and verified
-        if (emailNotVerified) {
-          setAlreadyRegisteredMessage('Email already registered but not verified.');
-        } else {
-          // Check if email is already registered and verified
-          const emailCheckResponse = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/check-email-verified/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-              email: formData.email
-            }),
-            mode: 'cors'
-          });
-          
-          if (emailCheckResponse.ok) {
-            const emailCheckData = await emailCheckResponse.json();
-            if (emailCheckData.registered && emailCheckData.verified) {
-              setAlreadyRegisteredMessage('Email already registered and verified.');
-            }
-          }
-        }
-        
-        // Show preview regardless of status - user should see the messages in preview
-        setCurrentStep('preview');
-      } catch (error) {
-        console.error('Error checking email/phone status:', error);
-        // Still show preview even if there's an error checking status
-        setCurrentStep('preview');
-      } finally {
-        setCheckingEmail(false);
-      }
+      setCurrentStep('preview');
     }
   };
 
+  // Handle direct verification for already registered but unverified email
+  const handleDirectVerification = () => {
+    setRegisteredEmail(formData.email);
+    setCurrentStep('verification');
+  };
+
+  // Open certificate in new tab
+  const openCertificateInNewTab = (certificateId) => {
+    if (certificateUrls[certificateId]) {
+      window.open(certificateUrls[certificateId], '_blank');
+    }
+  };
+
+  // Reset form when component unmounts
+  useEffect(() => {
+    return () => {
+      setErrors({});
+      setApiError('');
+      setSubmitSuccess(false);
+      setVerificationSuccess(false);
+      setCurrentStep('registration');
+      setVerificationCode('');
+      setRegisteredEmail('');
+      setResendSuccess(false);
+      setApiResponse(null);
+      setCountdown(0);
+      setAlreadyRegisteredMessage('');
+      setPhoneAlreadyRegisteredMessage('');
+      setUserTypeError('');
+      setCertificateUrls({});
+      setEmailNotVerified(false);
+      setCheckingEmail(false);
+    };
+  }, []);
+
+  // Get today's date in YYYY-MM-DD format for max attribute
+  const today = new Date().toISOString().split('T')[0];
+
+  // Check if links error is a string or array
+  const getLinkError = (errorType, index) => {
+    if (errors[errorType]) {
+      if (Array.isArray(errors[errorType])) {
+        return errors[errorType][index];
+      }
+      return errors[errorType];
+    }
+    return '';
+  };
+
+  // ==================== NEW DOWNLOAD FUNCTION ====================
+  // Function to handle downloading the registration preview as PDF
+  const handlePrintPreview = async () => {
+    // Load html2canvas and jsPDF from CDN
+    if (!window.html2canvas || !window.jsPDF) {
+      // Load html2canvas
+      const html2canvasScript = document.createElement('script');
+      html2canvasScript.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      html2canvasScript.async = true;
+      
+      // Load jsPDF
+      const jsPDFScript = document.createElement('script');
+      jsPDFScript.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+      jsPDFScript.async = true;
+      
+      // Wait for both scripts to load
+      await Promise.all([
+        new Promise(resolve => {
+          html2canvasScript.onload = resolve;
+          document.head.appendChild(html2canvasScript);
+        }),
+        new Promise(resolve => {
+          jsPDFScript.onload = resolve;
+          document.head.appendChild(jsPDFScript);
+        })
+      ]);
+    }
+    
+    // Find the preview container element
+    const previewContainer = document.querySelector('.preview-container');
+    if (!previewContainer) {
+      console.error('Preview container not found');
+      return;
+    }
+    
+    // Find and hide the action buttons temporarily
+    const previewActions = previewContainer.querySelector('.preview-actions');
+    const originalDisplay = previewActions ? previewActions.style.display : '';
+    if (previewActions) {
+      previewActions.style.display = 'none';
+    }
+    
+    try {
+      // Create PDF
+      const pdf = new window.jspdf.jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Find all form sections
+      const allSections = previewContainer.querySelectorAll('.form-section');
+      
+      // Find the certificates section (SECTION 7)
+      let certificatesSection = null;
+      let certificatesSectionIndex = -1;
+      
+      for (let i = 0; i < allSections.length; i++) {
+        const sectionHeader = allSections[i].querySelector('.section-header h5');
+        if (sectionHeader && sectionHeader.textContent.includes('SECTION 7: CERTIFICATES')) {
+          certificatesSection = allSections[i];
+          certificatesSectionIndex = i;
+          break;
+        }
+      }
+      
+      // If certificates section exists, split the content
+      if (certificatesSection) {
+        // Create a container for page 1 content (everything before certificates)
+        const page1Container = document.createElement('div');
+        page1Container.className = 'page1-content';
+        page1Container.style.width = previewContainer.offsetWidth + 'px';
+        page1Container.style.backgroundColor = '#fff';
+        
+        // Copy the header and all sections before certificates
+        const header = previewContainer.querySelector('.official-header').cloneNode(true);
+        page1Container.appendChild(header);
+        
+        // Add all messages (alerts) if any
+        const alerts = previewContainer.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+          page1Container.appendChild(alert.cloneNode(true));
+        });
+        
+        // Add all sections before certificates
+        for (let i = 0; i < certificatesSectionIndex; i++) {
+          page1Container.appendChild(allSections[i].cloneNode(true));
+        }
+        
+        // Temporarily add to body for rendering
+        document.body.appendChild(page1Container);
+        
+        // Capture page 1
+        const canvas1 = await window.html2canvas(page1Container, {
+          scale: 2, // Higher quality
+          useCORS: true,
+          logging: false,
+          windowWidth: page1Container.scrollWidth,
+          windowHeight: page1Container.scrollHeight
+        });
+        
+        // Remove from body
+        document.body.removeChild(page1Container);
+        
+        // Add page 1 to PDF
+        const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
+        const imgWidth = 210; // A4 width in mm
+        const imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
+        
+        pdf.addImage(imgData1, 'JPEG', 0, 0, imgWidth, imgHeight1);
+        
+        // Create a container for page 2 content (certificates and everything after)
+        const page2Container = document.createElement('div');
+        page2Container.className = 'page2-content';
+        page2Container.style.width = previewContainer.offsetWidth + 'px';
+        page2Container.style.backgroundColor = '#fff';
+        
+        // Add certificates section and all sections after it
+        for (let i = certificatesSectionIndex; i < allSections.length; i++) {
+          page2Container.appendChild(allSections[i].cloneNode(true));
+        }
+        
+        // Temporarily add to body for rendering
+        document.body.appendChild(page2Container);
+        
+        // Capture page 2
+        const canvas2 = await window.html2canvas(page2Container, {
+          scale: 2, // Higher quality
+          useCORS: true,
+          logging: false,
+          windowWidth: page2Container.scrollWidth,
+          windowHeight: page2Container.scrollHeight
+        });
+        
+        // Remove from body
+        document.body.removeChild(page2Container);
+        
+        // Add page 2 to PDF
+        pdf.addPage();
+        const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
+        const imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
+        
+        pdf.addImage(imgData2, 'JPEG', 0, 0, imgWidth, imgHeight2);
+      } else {
+        // If no certificates section, capture the entire content as before
+        const canvas = await window.html2canvas(previewContainer, {
+          scale: 2, // Higher quality
+          useCORS: true,
+          logging: false,
+          windowWidth: previewContainer.scrollWidth,
+          windowHeight: previewContainer.scrollHeight
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        // Add additional pages if content is too long
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+      }
+      
+      // Restore the action buttons
+      if (previewActions) {
+        previewActions.style.display = originalDisplay;
+      }
+      
+      // Save the PDF
+      const fileName = `registration-preview-${formData.full_name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      // Restore the action buttons in case of error
+      if (previewActions) {
+        previewActions.style.display = originalDisplay;
+      }
+      // Fallback to print method if PDF generation fails
+      handlePrintFallback();
+    }
+  };
+  
+  // Fallback print method
+  const handlePrintFallback = () => {
+    const previewContainer = document.querySelector('.preview-container');
+    if (!previewContainer) {
+      console.error('Preview container not found');
+      return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Could not open print window');
+      return;
+    }
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Registration Preview</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <style>
+            body { font-family: Arial, sans-serif; color: #333; padding: 20px; }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${previewContainer.innerHTML}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+  
+  // Handle combined submission and download
+  const handleSubmitAndDownload = async () => {
+    // First, submit the registration
+    await handleRegistrationSubmit({ preventDefault: () => {} });
+    
+    // Then, download the preview after successful submission
+    if (submitSuccess) {
+      handlePrintPreview();
+    }
+  };
+
+  // ===========================================================
+
   // Handle registration form submission
   const handleRegistrationSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     
     setIsSubmitting(true);
     setApiError('');
@@ -1202,8 +1370,13 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
       setSubmitSuccess(true);
       setIsSubmitting(false);
       
-      // Move to verification step
-      setCurrentStep('verification');
+      // Download the PDF before moving to verification step
+      handlePrintPreview();
+      
+      // Move to verification step after a short delay to allow PDF download
+      setTimeout(() => {
+        setCurrentStep('verification');
+      }, 1000);
       
       // Reset form after successful submission
       setTimeout(() => {
@@ -1345,7 +1518,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
           } else {
             navigate('/Login');
           }
-        }, 2000);
+        }, 5000); // Increased timeout to allow user to click print
         
       } catch (error) {
         console.error('Verification error:', error);
@@ -1466,55 +1639,6 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
     }
   };
 
-  // Handle direct verification for already registered but unverified email
-  const handleDirectVerification = () => {
-    setRegisteredEmail(formData.email);
-    setCurrentStep('verification');
-  };
-
-  // Open certificate in new tab
-  const openCertificateInNewTab = (certificateId) => {
-    if (certificateUrls[certificateId]) {
-      window.open(certificateUrls[certificateId], '_blank');
-    }
-  };
-
-  // Reset form when component unmounts
-  useEffect(() => {
-    return () => {
-      setErrors({});
-      setApiError('');
-      setSubmitSuccess(false);
-      setVerificationSuccess(false);
-      setCurrentStep('registration');
-      setVerificationCode('');
-      setRegisteredEmail('');
-      setResendSuccess(false);
-      setApiResponse(null);
-      setCountdown(0);
-      setAlreadyRegisteredMessage('');
-      setPhoneAlreadyRegisteredMessage('');
-      setUserTypeError('');
-      setCertificateUrls({});
-      setEmailNotVerified(false);
-      setCheckingEmail(false);
-    };
-  }, []);
-
-  // Get today's date in YYYY-MM-DD format for max attribute
-  const today = new Date().toISOString().split('T')[0];
-
-  // Check if links error is a string or array
-  const getLinkError = (errorType, index) => {
-    if (errors[errorType]) {
-      if (Array.isArray(errors[errorType])) {
-        return errors[errorType][index];
-      }
-      return errors[errorType];
-    }
-    return '';
-  };
-
   return (
     <>
       <div className="gallery-banner">
@@ -1530,7 +1654,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
       
       <div className='container box-shadow'>
         <main className="main">
-          <section id="registration" className="registration section-registration">
+          <section id="registration" className="registration section-registration section-gallery">
             <div className="container" data-aos="fade-up" data-aos-delay="100">
               {currentStep === 'registration' ? (
                 // Registration Form
@@ -1913,7 +2037,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                               type="url"
                               value={link}
                               onChange={(e) => handleSocialMediaLinkChange(index, e.target.value)}
-                              placeholder="https://github.com/username"
+                              placeholder=" https://www.instagram.com/"
                               className="form-control-custom"
                             />
                             {formData.social_media_links.length > 1 && (
@@ -2220,15 +2344,16 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                 )
               ) : currentStep === 'preview' ? (
                 // Registration Preview
-                 <div className="preview-container">
+                <div className="preview-container">
                   <RegistrationPreview 
                     formData={formData} 
                     certificateUrls={certificateUrls}
                     alreadyRegisteredMessage={alreadyRegisteredMessage}
                     phoneAlreadyRegisteredMessage={phoneAlreadyRegisteredMessage}
+                    isVerified={false} // KEY CHANGE: User is NOT verified yet
                   />
                   
-                  <div className="preview-actions mt-4 text-end">
+                  <div className="preview-actions mt-4 text-end no-print">
                     <Button 
                       variant="secondary" 
                       onClick={() => setCurrentStep('registration')} 
@@ -2238,13 +2363,14 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                     </Button>
                     <Button 
                       variant="primary" 
-                      onClick={handleRegistrationSubmit} 
+                      onClick={handleSubmitAndDownload} 
                       disabled={isSubmitting}
                       className="btn-custom-primary"
                     >
-                      {isSubmitting ? 'Submitting...' : 'Submit Registration'}
+                      {isSubmitting ? 'Processing...' : 'Submit & Save Preview'}
                     </Button>
                   </div>
+                  
                 </div>
               ) : (
                 // Email Verification Form
@@ -2258,6 +2384,13 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                       {fromEvent ? 'Redirecting back to events page...' : 'Redirecting to login page...'}
                     </p>
                     <ProgressBar animated now={100} className="mt-3" />
+                    
+                    {/* You can save your registration from the previous preview page */}
+                    <div className="mt-4">
+                      <Button variant="secondary" onClick={() => navigate(fromEvent ? '/Events' : '/Login')}>
+                        {fromEvent ? 'Go to Events' : 'Go to Login'}
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="verification-form-container p-4">

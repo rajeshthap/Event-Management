@@ -537,7 +537,7 @@ const ManageEntertainment = () => {
 
           <Container fluid className="dashboard-body dashboard-main-container">
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="page-title mb-0">Manage Corporate Events</h1>
+              <h1 className="page-title mb-0">Manage Entertainment Events</h1>
               <Button variant="primary" onClick={addNewCorporateEventItem}>
                 <FaPlus /> Add New Item
               </Button>

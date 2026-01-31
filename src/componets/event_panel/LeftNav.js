@@ -6,7 +6,6 @@ import {
   FaChevronDown,
   FaChevronRight,
   FaImages,
-  
   FaUsers,
   FaBook,
   FaBuilding,
@@ -17,24 +16,25 @@ import {
   FaProjectDiagram,
   FaServer,
   FaUserCircle,
+  FaCalendarAlt,
+  FaPlusSquare,
+  FaListUl,
+  FaEdit,
+  FaMusic,
+  FaGlassCheers,
+  FaChalkboardTeacher,
+  FaIndustry
 } from "react-icons/fa";
 import axios from "axios";
 import "../../assets/css/dashboard.css";
 import { Link } from "react-router-dom";
 import {
   FaInfoCircle,
- 
-  FaEdit,
-  FaListUl,
   FaBullseye,
-  FaPlusSquare,
   FaTasks
 } from "react-icons/fa";
 
 // import BRLogo from "../../assets/images/brainrock_logo.png";
-
-
-
 
 const LeftNav = ({ sidebarOpen, setSidebarOpen, isMobile, isTablet }) => {
     // const { logout } = useContext(AuthContext);
@@ -46,9 +46,6 @@ const LeftNav = ({ sidebarOpen, setSidebarOpen, isMobile, isTablet }) => {
   const toggleSubmenu = (index) => {
     setOpenSubmenu(openSubmenu === index ? null : index);
   };
-  
-
-
 
 const menuItems = [
     {
@@ -58,194 +55,159 @@ const menuItems = [
       active: true,
     },
    
-      {
-      icon: <FaTachometerAlt />,
+    {
+      icon: <FaUsers />,
       label: "Total Registration",
       path: "/TotalRegistration",
       active: true,
     },
-     {
-      icon: <FaTachometerAlt />,
+    {
+      icon: <FaUserCircle />,
       label: "Total Participated User",
       path: "/ParticipatedUser",
       active: true,
     },
-     {
-      icon: <FaTachometerAlt />,
+    {
+      icon: <FaComments />,
       label: "Total Query",
       path: "/TotalQuery",
       active: true,
     },
 
-
-   {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "Event",
-  submenu: [
     {
-      label: "Add Event",
-      path: "/AddEvent",
-      icon: <FaUserCircle />, // profile
-    },
-     {
+      icon: <FaCalendarAlt />,
+      label: "Event",
+      submenu: [
+        {
+          label: "Add Event",
+          path: "/AddEvent",
+          icon: <FaPlusSquare />,
+        },
+        {
           label: "Manage Event",
           path: "/ManageEvent",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-   
-   
-  ],
-},
-   {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "Carousel",
-  submenu: [
-    {
-      label: "AddCarousel ",
-      path: "/AddCarousel",
-      icon: <FaUserCircle />, // profile
+      ],
     },
-     {
+    {
+      icon: <FaImages />,
+      label: "Carousel",
+      submenu: [
+        {
+          label: "AddCarousel ",
+          path: "/AddCarousel",
+          icon: <FaPlusSquare />,
+        },
+        {
           label: "Manage Carousel",
           path: "/ManageCarousel",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-   
-   
-  ],
-},
-   {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "AboutUs",
-  submenu: [
-    {
-      label: "Add AboutUs",
-      path: "/AddAboutUs",
-      icon: <FaUserCircle />, // profile
+      ],
     },
-     {
+    {
+      icon: <FaInfoCircle />,
+      label: "AboutUs",
+      submenu: [
+        {
+          label: "Add AboutUs",
+          path: "/AddAboutUs",
+          icon: <FaPlusSquare />,
+        },
+        {
           label: "Manage AboutUs",
           path: "/ManageAboutUs",
-          icon: <FaImage />,
+          icon: <FaEdit />,
         },
-   
-   
-  ],
-},
-   {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "Header",
-  submenu: [
-    {
-      label: "Add Header",
-      path: "/AddHeader",
-      icon: <FaUserCircle />, // profile
+      ],
     },
-     {
+    {
+      icon: <FaBuilding />,
+      label: "Header",
+      submenu: [
+        {
           label: "Manage header",
           path: "/ManageHeader",
-          icon: <FaImage />,
+          icon: <FaEdit />,
         },
-   
-   
-  ],
-},
- {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "Gallery",
-  submenu: [
-    {
-      label: "Add Gallery",
-      path: "/AddGallery",
-      icon: <FaUserCircle />, // profile
+      ],
     },
-     {
+    {
+      icon: <FaImage />,
+      label: "Gallery",
+      submenu: [
+        {
+          label: "Add Gallery",
+          path: "/AddGallery",
+          icon: <FaPlusSquare />,
+        },
+        {
           label: "Manage Gallery",
           path: "/ManageGallery",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-   
-   
-  ],
-},
-   {
-  icon: <FaInfoCircle />,   // About Us main
-  label: "Services",
-  submenu: [
-    {
-      label: "Add Corporateevents",
-      path: "/AddCorporateevents",
-      icon: <FaUserCircle />, // profile
+      ],
     },
-     {
-          label: "Manage Services",
-          path: "/ManageCorporateevents",
-          icon: <FaImage />,
+    {
+      icon: <FaTools />,
+      label: "Services",
+      submenu: [
+        {
+          label: "Add Corporateevents",
+          path: "/AddCorporateevents",
+          icon: <FaIndustry />,
         },
-         {
+        {
+          label: "Corporate Manage Services",
+          path: "/ManageCorporateevents",
+          icon: <FaListUl />,
+        },
+        {
           label: "Add Entertainment",
           path: "/AddEntertainment",
-          icon: <FaImage />,
+          icon: <FaMusic />,
         },
-         {
+        {
           label: "Manage Entertainment",
           path: "/ManageEntertainment",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-         {
+        {
           label: "Add Concert",
           path: "/AddConcert",
-          icon: <FaImage />,
+          icon: <FaMusic />,
         },
-         {
+        {
           label: "Manage Concert",
           path: "/ManageConcert",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-         {
+        {
           label: "Add Parties",
           path: "/AddPrivateParties",
-          icon: <FaImage />,
+          icon: <FaGlassCheers />,
         },
-         {
+        {
           label: "Manage Parties",
           path: "/ManageParties",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-         {
+        {
           label: "Add Seminars Conferences",
           path: "/AddSeminarsConferences",
-          icon: <FaImage />,
+          icon: <FaChalkboardTeacher />,
         },
-         {
+        {
           label: "Manage Seminars Conferences",
           path: "/ManageSeminarsConferences",
-          icon: <FaImage />,
+          icon: <FaListUl />,
         },
-   
-   
-  ],
-},
-
-
-   
-
- 
-    
-    
-  
-   
-
-    
-  
+      ],
+    },
   ];
 
-
-  
-  
-
   //  Auto-close sidebar when switching to mobile or tablet
-  
 
   return (
     <>

@@ -8,6 +8,7 @@ import "../../assets/css/UserDashBoadCard.css"
 import UserHeader from "./UserHeader";
 import { useAuthFetch } from "../context/AuthFetch"; // Import useAuthFetch
 import { useNavigate } from "react-router-dom";
+import FooterDashBoard from "../footer/FooterDashBoard";
 
 const UserDashBoard = () => {
   const authFetch = useAuthFetch();
@@ -196,7 +197,9 @@ const UserDashBoard = () => {
               </>
             )}
           </Container>
+          <FooterDashBoard />
         </div>
+        
       </div>
     </>
   );
