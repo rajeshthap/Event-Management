@@ -114,8 +114,8 @@ function NavBar() {
               </ul>
               <ul className="list-unstyled mb-0">
                 <li>
-                  <Button variant="primary" className="login-btn" href="/Login">Login</Button>
-                  <Button variant="primary" className="login-btn mx-3" href="/Registration">Register</Button>
+                  <Link to="/Login" className="btn btn-primary login-btn">Login</Link>
+                  <Link to="/Registration" className="btn btn-primary login-btn mx-3">Register</Link>
                 </li>
               </ul>
             </div>
@@ -133,8 +133,8 @@ function NavBar() {
               </ul>
               <ul className="list-unstyled mb-0 ms-3">
                 <li>
-                  <Button variant="primary" className="login-btn" href="/Login">Login</Button>
-                  <Button variant="primary" className="login-btn mx-3" href="/Registration">Register</Button>
+                  <Link to="/Login" className="btn btn-primary login-btn">Login</Link>
+                  <Link to="/Registration" className="btn btn-primary login-btn mx-3">Register</Link>
                 </li>
               </ul>
             </div>

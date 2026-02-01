@@ -96,7 +96,7 @@ const RegistrationPreview = ({
           <div className="d-flex justify-content-between mb-3">
             <div className="flex-grow-1">
               <h3 className="mb-1">E v e n t </h3>
-              <p className="mb-1">R e g i s t r a t i o n I D | BCS-020250101</p>
+            
               <p className="mb-0 small">Dehradun, Uttarakhand</p>
             
               <p className="mb-0 small font-weight-bold">Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -120,9 +120,9 @@ const RegistrationPreview = ({
 
           {/* OJT REGISTRATION FORM Title */}
           <div className="text-center mb-4">
-            <h4 className="mb-3 font-weight-bold">OJT REGISTRATION FORM</h4>
+            <h4 className="mb-3 font-weight-bold"> REGISTRATION FORM</h4>
             <div className="d-flex align-items-center mb-3">
-              <span className="me-2 font-weight-bold">APPLICATION FOR THE COURSE OF</span>
+              <span className="me-2 font-weight-bold">APPLICATION FOR Event</span>
               <div className="border-bottom flex-grow-1"></div>
             </div>
           </div>
@@ -143,17 +143,7 @@ const RegistrationPreview = ({
                 </div>
               </div>
               
-              {/* Father's/Mother Name - Only show if filled */}
-              {hasValue(formData.father_mother_name) && (
-                <div className="row mb-3">
-                  <div className="col-md-3">
-                    <label className="form-label font-weight-bold">Father's /Mother Name</label>
-                  </div>
-                  <div className="col-md-9">
-                    <div className="form-control-static">{formData.father_mother_name}</div>
-                  </div>
-                </div>
-              )}
+           
               
               {/* Address - Always show as it's required */}
               <div className="row mb-3">
