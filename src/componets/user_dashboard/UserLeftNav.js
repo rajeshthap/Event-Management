@@ -6,7 +6,6 @@ import {
   FaChevronDown,
   FaChevronRight,
   FaImages,
-  
   FaUsers,
   FaBook,
   FaBuilding,
@@ -17,13 +16,14 @@ import {
   FaProjectDiagram,
   FaServer,
   FaUserCircle,
+  FaCalendarAlt, // Added for events
+  FaHome, // Added for dashboard
 } from "react-icons/fa";
 import axios from "axios";
 import "../../assets/css/dashboard.css";
 import { Link } from "react-router-dom";
 import {
   FaInfoCircle,
- 
   FaEdit,
   FaListUl,
   FaBullseye,
@@ -44,17 +44,19 @@ const UserLeftNav = ({ sidebarOpen, setSidebarOpen, isMobile, isTablet }) => {
     setOpenSubmenu(openSubmenu === index ? null : index);
   };
   
-
-
-
 const menuItems = [
     {
-      icon: <FaTachometerAlt />,
+      icon: <FaHome />,
       label: "Dashboard",
+      path: "/UserProfile",
+      active: true,
+    },
+     {
+      icon: <FaCalendarAlt />,
+      label: "My Events",
       path: "/UserDashBoard",
       active: true,
     },
- 
     
    
 

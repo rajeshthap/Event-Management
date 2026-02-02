@@ -55,12 +55,12 @@ const menuItems = [
       active: true,
     },
    
-    {
-      icon: <FaUsers />,
-      label: "Total Registration",
-      path: "/TotalRegistration",
-      active: true,
-    },
+    // {
+    //   icon: <FaUsers />,
+    //   label: "Total Registration",
+    //   path: "/TotalRegistration",
+    //   active: true,
+    // },
     {
       icon: <FaUserCircle />,
       label: "Total Participated User",
@@ -218,7 +218,7 @@ const menuItems = [
         <div className="sidebar-header">
           <div className="logo-container">
             <div className="logo">
-             
+             Admin DashBoard
               {/* <span className="logo-text"><img src={BRLogo} alt="text"></img></span> */}
             </div>
           </div>

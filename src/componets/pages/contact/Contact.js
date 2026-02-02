@@ -182,9 +182,9 @@ function Contact() {
                   
                   <div className="info-item mb-3">
                     <div className="d-flex align-items-center">
-                      <FaPhone className="info-icon me-3 text-primary" />
+                      {/* <FaPhone className="info-icon me-3 text-primary" /> */}
                       <div>
-                        <h5 className="info-title">Phone</h5>
+                        {/* <h5 className="info-title">Phone</h5> */}
                         <p className="info-text">{companyData.phone}</p>
                       </div>
                     </div>

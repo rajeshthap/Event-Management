@@ -15,6 +15,9 @@ import {
   Form,
   Dropdown,
   DropdownButton,
+  ProgressBar,
+  OverlayTrigger,
+  Tooltip,
 } from "react-bootstrap";
 import {
   FaUser,
@@ -30,6 +33,22 @@ import {
   FaSave,
   FaTimes,
   FaPlus,
+  FaCamera,
+  FaDownload,
+  FaCheckCircle,
+  FaGlobe,
+  FaIdCard,
+  FaBriefcase,
+  FaGraduationCap,
+  FaTrophy,
+  FaLink,
+  FaUserTie,
+  FaBuilding,
+  FaMapPin,
+  FaBirthdayCake,
+  FaTransgender,
+  FaUpload,
+  FaEye,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import UserHeader from "../UserHeader";
@@ -61,6 +80,12 @@ const UserProfile = () => {
   
   // State for document upload
   const [selectedDocumentType, setSelectedDocumentType] = useState("");
+  
+  // State for profile image preview
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  
+  // State for active tab
+  const [activeTab, setActiveTab] = useState("personal");
 
   // Check device width
   useEffect(() => {
@@ -141,6 +166,11 @@ const UserProfile = () => {
 
   // Get user photo URL
   const getUserPhotoUrl = () => {
+    // If we have a preview image, use it
+    if (profileImagePreview) {
+      return profileImagePreview;
+    }
+    
     if (!userData?.profile_image || imageError) {
       return null;
     }
@@ -197,6 +227,8 @@ const UserProfile = () => {
     // Reset form data to original user data
     setEditFormData(userData);
     setSelectedDocumentType("");
+    // Reset profile image preview
+    setProfileImagePreview(null);
   };
 
   // Handle form input changes
@@ -302,6 +334,9 @@ const UserProfile = () => {
         setSuccessMessage("Profile updated successfully!");
         setIsEditMode(false);
         
+        // Reset profile image preview after successful save
+        setProfileImagePreview(null);
+        
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
         throw new Error(result.message || "Failed to update profile");
@@ -331,6 +366,11 @@ const UserProfile = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Create a preview URL for the selected image
+      const previewUrl = URL.createObjectURL(file);
+      setProfileImagePreview(previewUrl);
+      
+      // Update the form data with the file
       setEditFormData(prev => ({
         ...prev,
         profile_image: file
@@ -356,18 +396,45 @@ const UserProfile = () => {
 
   // Document types for dropdown
   const documentTypes = [
-    { key: 'portfolio_file', label: 'Portfolio' },
-    { key: 'national_level_certificate', label: 'National Level Certificate' },
-    { key: 'internation_level_certificate_award', label: 'International Level Certificate' },
-    { key: 'state_level_certificate', label: 'State Level Certificate' },
-    { key: 'district_level_certificate', label: 'District Level Certificate' },
-    { key: 'college_level_certificate', label: 'College Level Certificate' },
-    { key: 'other_certificate', label: 'Other Certificate' }
+    { key: 'portfolio_file', label: 'Portfolio', icon: <FaBriefcase /> },
+    { key: 'national_level_certificate', label: 'National Level Certificate', icon: <FaTrophy /> },
+    { key: 'internation_level_certificate_award', label: 'International Level Certificate', icon: <FaAward /> },
+    { key: 'state_level_certificate', label: 'State Level Certificate', icon: <FaGraduationCap /> },
+    { key: 'district_level_certificate', label: 'District Level Certificate', icon: <FaMapPin /> },
+    { key: 'college_level_certificate', label: 'College Level Certificate', icon: <FaGraduationCap /> },
+    { key: 'other_certificate', label: 'Other Certificate', icon: <FaFileAlt /> }
   ];
 
   // Check if a document exists
   const documentExists = (documentType) => {
     return userData && userData[documentType];
+  };
+
+  // Calculate profile completion percentage
+  const calculateProfileCompletion = () => {
+    if (!userData) return 0;
+    
+    let filledFields = 0;
+    const totalFields = 15; // Approximate number of important fields
+    
+    // Check important fields
+    if (userData.full_name) filledFields++;
+    if (userData.email) filledFields++;
+    if (userData.phone) filledFields++;
+    if (userData.address) filledFields++;
+    if (userData.country) filledFields++;
+    if (userData.state) filledFields++;
+    if (userData.city) filledFields++;
+    if (userData.date_of_birth) filledFields++;
+    if (userData.gender) filledFields++;
+    if (userData.user_type) filledFields++;
+    if (userData.introduction) filledFields++;
+    if (userData.profile_image) filledFields++;
+    if (userData.talent_scope && userData.talent_scope.length > 0) filledFields++;
+    if (userData.social_media_link && userData.social_media_link.length > 0) filledFields++;
+    if (userData.portfolio_link && userData.portfolio_link.length > 0) filledFields++;
+    
+    return Math.round((filledFields / totalFields) * 100);
   };
 
   // Show loading spinner while auth is loading
@@ -447,6 +514,8 @@ const UserProfile = () => {
     );
   }
 
+  const profileCompletion = calculateProfileCompletion();
+
   return (
     <div className="dashboard-container">
       {/* Left Sidebar */}
@@ -461,9 +530,13 @@ const UserProfile = () => {
       <div className="main-content-dash">
         <UserHeader toggleSidebar={toggleSidebar} />
 
-        <Container fluid className="dashboard-body dashboard-main-container">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="page-title">User Profile</h1>
+        <Container fluid className="dashboard-body dashboard-main-container p-4">
+          {/* Page Header */}
+          <div className="page-header d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h1 className="page-title">User Profile</h1>
+              <p className="text-muted">Manage your personal information and preferences</p>
+            </div>
             {isEditMode ? (
               <div>
                 <Button variant="success" className="me-2" onClick={handleSaveProfile} disabled={isSubmitting}>
@@ -475,230 +548,328 @@ const UserProfile = () => {
                 </Button>
               </div>
             ) : (
-              <Button variant="primary" onClick={handleEditClick}>
+              <Button variant="primary" className="btn-edit-profile" onClick={handleEditClick}>
                 <FaEdit className="me-2" /> Edit Profile
               </Button>
             )}
           </div>
 
           {successMessage && (
-            <Alert variant="success" className="mb-4">
+            <Alert variant="success" className="mb-4 alert-dismissible fade show">
+              <FaCheckCircle className="me-2" />
               {successMessage}
+              <button type="button" className="btn-close" onClick={() => setSuccessMessage("")}></button>
             </Alert>
           )}
 
-          <div className="row">
-            {/* Profile Sidebar */}
-            <Col lg={2} className="mb-4">
-              <Card className="profile-sidebar">
-                <Card.Body>
-                  <div className="text-center">
-                    {isEditMode ? (
-                      <div>
-                        <Image
-                          src={getUserPhotoUrl() || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData?.full_name || 'User')}&background=0d6efd&color=fff&size=128`}
-                          roundedCircle
-                          className="profile-photo mb-3"
-                          onError={handleImageError}
-                        />
-                        <Form.Group controlId="formProfileImage">
-                          <Form.Label>Change Photo</Form.Label>
-                          <Form.Control
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                          />
-                        </Form.Group>
-                      </div>
-                    ) : (
+          {/* Two Column Layout */}
+          <Row>
+            {/* Left Column - Profile Information */}
+            <Col md={4} className="mb-4">
+              <Card className="profile-info-card border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="profile-header-section text-center">
+                    <div className="profile-photo-wrapper position-relative d-inline-block mb-3">
                       <Image
                         src={getUserPhotoUrl() || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData?.full_name || 'User')}&background=0d6efd&color=fff&size=128`}
                         roundedCircle
-                        className="profile-photo mb-3"
+                        className="profile-photo"
                         onError={handleImageError}
                       />
-                    )}
-                    <h3 className="profile-name">
+                      {isEditMode && (
+                        <label htmlFor="profile-image-upload" className="profile-photo-edit">
+                          <FaCamera />
+                          <Form.Control
+                            id="profile-image-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="d-none"
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <h4 className="profile-name mb-1">
                       {userData?.full_name || 'User'}
-                    </h3>
-                    {/* <p className="profile-email">{userData?.email || 'email@example.com'}</p> */}
-                  
-                    <Badge bg="primary" className="profile-role">
+                    </h4>
+                    <Badge bg="primary" className="profile-role mb-3">
                       {userData?.role || 'User'}
                     </Badge>
+                    
+                    <div className="profile-stats d-flex justify-content-around mb-3">
+                      <div className="text-center">
+                        <h6 className="mb-0">{userData?.talent_scope?.length || 0}</h6>
+                        <small className="text-muted">Talents</small>
+                      </div>
+                      <div className="text-center">
+                        <h6 className="mb-0">{userData?.social_media_link?.length || 0}</h6>
+                        <small className="text-muted">Social</small>
+                      </div>
+                      <div className="text-center">
+                        <h6 className="mb-0">{documentTypes.filter(type => documentExists(type.key)).length}</h6>
+                        <small className="text-muted">Documents</small>
+                      </div>
+                    </div>
+                    
+                    <div className="profile-completion mb-3">
+                      <div className="d-flex justify-content-between mb-1">
+                        <small>Profile Completion</small>
+                        <small>{profileCompletion}%</small>
+                      </div>
+                      <ProgressBar now={profileCompletion} variant={profileCompletion >= 80 ? "success" : profileCompletion >= 50 ? "warning" : "danger"} />
+                    </div>
+                    
+                 
                   </div>
-
-              
                 </Card.Body>
               </Card>
             </Col>
 
-            {/* Profile Content */}
-            <Col lg={10} className="mb-4">
-              <Card className="profile-content">
-                <Card.Body>
-                  <Tabs defaultActiveKey="personal" id="profile-tabs">
+            {/* Right Column - Content Area with Tabs */}
+            <Col md={8} className="mb-4">
+              <Card className="profile-content-card border-0 shadow-sm">
+                <Card.Header className="bg-light p-3">
+                  <Tabs
+                    activeKey={activeTab}
+                    onSelect={(key) => setActiveTab(key)}
+                    className="profile-tabs"
+                  >
                     <Tab eventKey="personal" title={
-                      <span className="tab-style">
+                      <span className="d-flex align-items-center">
+                        <FaUser className="me-2 text-primary" />
                         Personal Information
                       </span>
                     }>
+                    </Tab>
+                    <Tab eventKey="contact" title={
+                      <span className="d-flex align-items-center">
+                        <FaMapMarkerAlt className="me-2 text-primary" />
+                        Contact Information
+                      </span>
+                    }>
+                    </Tab>
+                    <Tab eventKey="professional" title={
+                      <span className="d-flex align-items-center">
+                        <FaBriefcase className="me-2 text-primary" />
+                        Professional Information
+                      </span>
+                    }>
+                    </Tab>
+                    <Tab eventKey="social" title={
+                      <span className="d-flex align-items-center">
+                        <FaLink className="me-2 text-primary" />
+                        Social Media
+                      </span>
+                    }>
+                    </Tab>
+                    <Tab eventKey="documents" title={
+                      <span className="d-flex align-items-center">
+                        <FaFileAlt className="me-2 text-primary" />
+                        Documents & Certificates
+                      </span>
+                    }>
+                    </Tab>
+                  </Tabs>
+                </Card.Header>
+
+                <Card.Body className="p-4">
+                  {/* Personal Information Tab */}
+                  {activeTab === "personal" && (
+                    <div>
+                      <h4 className="mb-4">
+                        <FaUser className="me-2 text-primary" />
+                        Personal Information
+                      </h4>
                       <Form onSubmit={handleSaveProfile}>
-                        <Form.Group controlId="formFullName" className="mb-3">
-                          <Form.Label>Full Name</Form.Label>
-                          <Form.Control
-                            type="text"
-                            name="full_name"
-                            value={editFormData.full_name || ''}
-                            onChange={handleInputChange}
-                            disabled={!isEditMode}
-                          />
-                        </Form.Group>
-
-                        <Form.Group controlId="formEmail" className="mb-3">
-                          <Form.Label>Email</Form.Label>
-                          <Form.Control
-                            type="email"
-                            name="email"
-                            value={editFormData.email || ''}
-                            onChange={handleInputChange}
-                            disabled
-                          />
-                        </Form.Group>
-
-                        <Form.Group controlId="formPhone" className="mb-3">
-                          <Form.Label>Phone Number</Form.Label>
-                          <Form.Control
-                            type="tel"
-                            name="phone"
-                            value={editFormData.phone || ''}
-                            onChange={handleInputChange}
-                            disabled
-                          />
-                        </Form.Group>
-
-                        <Form.Group controlId="formDateOfBirth" className="mb-3">
-                          <Form.Label>Date of Birth</Form.Label>
-                          <Form.Control
-                            type="date"
-                            name="date_of_birth"
-                            value={editFormData.date_of_birth || ''}
-                            onChange={handleInputChange}
-                            disabled={!isEditMode}
-                          />
-                        </Form.Group>
-
-                        <Form.Group controlId="formGender" className="mb-3">
-                          <Form.Label>Gender</Form.Label>
-                          <Form.Select
-                            name="gender"
-                            value={editFormData.gender || ''}
-                            onChange={handleInputChange}
-                            disabled={!isEditMode}
-                          >
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                          </Form.Select>
-                        </Form.Group>
-
-                        <Form.Group controlId="formUserType" className="mb-3">
-                          <Form.Label>User Type</Form.Label>
-                          <Form.Select
-                            name="user_type"
-                            value={editFormData.user_type || ''}
-                            onChange={handleInputChange}
-                            disabled={!isEditMode}
-                          >
-                            <option value="individual">Individual</option>
-                            <option value="organization">Organization</option>
-                          </Form.Select>
-                        </Form.Group>
-
+                        <Row>
+                          <Col md={6}>
+                            <Form.Group controlId="formFullName" className="mb-3 form-group-modern">
+                                <Form.Label><FaUser className="me-2 text-primary" />Full Name</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="full_name"
+                                  value={editFormData.full_name || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                />
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group controlId="formEmail" className="mb-3 form-group-modern">
+                                <Form.Label><FaEnvelope className="me-2 text-primary" />Email</Form.Label>
+                                <Form.Control
+                                  type="email"
+                                  name="email"
+                                  value={editFormData.email || ''}
+                                  onChange={handleInputChange}
+                                  disabled
+                                  className="form-control-readonly"
+                                />
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                        
+                        <Row>
+                          <Col md={6}>
+                            <Form.Group controlId="formPhone" className="mb-3 form-group-modern">
+                                <Form.Label><FaPhone className="me-2 text-primary" />Phone Number</Form.Label>
+                                <Form.Control
+                                  type="tel"
+                                  name="phone"
+                                  value={editFormData.phone || ''}
+                                  onChange={handleInputChange}
+                                  disabled
+                                  className="form-control-readonly"
+                                />
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group controlId="formDateOfBirth" className="mb-3 form-group-modern">
+                                <Form.Label><FaBirthdayCake className="me-2 text-primary" />Date of Birth</Form.Label>
+                                <Form.Control
+                                  type="date"
+                                  name="date_of_birth"
+                                  value={editFormData.date_of_birth || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                />
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                        
+                        <Row>
+                          <Col md={6}>
+                            <Form.Group controlId="formGender" className="mb-3 form-group-modern">
+                                <Form.Label><FaTransgender className="me-2 text-primary" />Gender</Form.Label>
+                                <Form.Select
+                                  name="gender"
+                                  value={editFormData.gender || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                >
+                                  <option value="">Select Gender</option>
+                                  <option value="Male">Male</option>
+                                  <option value="Female">Female</option>
+                                  <option value="Other">Other</option>
+                                </Form.Select>
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group controlId="formUserType" className="mb-3 form-group-modern">
+                                <Form.Label><FaUserTie className="me-2 text-primary" />User Type</Form.Label>
+                                <Form.Select
+                                  name="user_type"
+                                  value={editFormData.user_type || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                >
+                                  <option value="individual">Individual</option>
+                                  <option value="organization">Organization</option>
+                                </Form.Select>
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                        
                         {editFormData.user_type === 'organization' && (
-                          <Form.Group controlId="formTeamName" className="mb-3">
-                            <Form.Label>Team/Organization Name</Form.Label>
-                            <Form.Control
-                              type="text"
-                              name="team_name"
-                              value={editFormData.team_name || ''}
-                              onChange={handleInputChange}
-                              disabled={!isEditMode}
-                            />
-                          </Form.Group>
+                          <Row>
+                            <Col md={12}>
+                              <Form.Group controlId="formTeamName" className="mb-3 form-group-modern">
+                                  <Form.Label><FaBuilding className="me-2 text-primary" />Team/Organization Name</Form.Label>
+                                  <Form.Control
+                                    type="text"
+                                    name="team_name"
+                                    value={editFormData.team_name || ''}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditMode}
+                                    className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                  />
+                                </Form.Group>
+                            </Col>
+                          </Row>
                         )}
                       </Form>
-                    </Tab>
+                    </div>
+                  )}
 
-                    <Tab eventKey="contact" title={
-    <span className="tab-style"
-     
-    >
-      Contact Information
-    </span>
-  }>
+                  {/* Contact Information Tab */}
+                  {activeTab === "contact" && (
+                    <div>
+                      <h4 className="mb-4">
+                        <FaMapMarkerAlt className="me-2 text-primary" />
+                        Contact Information
+                      </h4>
                       <Form onSubmit={handleSaveProfile}>
-                        <Form.Group controlId="formAddress" className="mb-3">
-                          <Form.Label>Address</Form.Label>
+                        <Form.Group controlId="formAddress" className="mb-3 form-group-modern">
+                          <Form.Label><FaMapMarkerAlt className="me-2 text-primary" />Address</Form.Label>
                           <Form.Control
                             type="text"
                             name="address"
                             value={editFormData.address || ''}
                             onChange={handleInputChange}
                             disabled={!isEditMode}
+                            className={isEditMode ? "form-control-modern" : "form-control-readonly"}
                           />
                         </Form.Group>
 
                         <Row>
                           <Col md={4}>
-                            <Form.Group controlId="formCountry" className="mb-3">
-                              <Form.Label>Country</Form.Label>
-                              <Form.Control
-                                type="text"
-                                name="country"
-                                value={editFormData.country || ''}
-                                onChange={handleInputChange}
-                                disabled={!isEditMode}
-                              />
+                            <Form.Group controlId="formCountry" className="mb-3 form-group-modern">
+                                <Form.Label><FaGlobe className="me-2 text-primary" />Country</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="country"
+                                  value={editFormData.country || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                />
                             </Form.Group>
                           </Col>
                           <Col md={4}>
-                            <Form.Group controlId="formState" className="mb-3">
-                              <Form.Label>State</Form.Label>
-                              <Form.Control
-                                type="text"
-                                name="state"
-                                value={editFormData.state || ''}
-                                onChange={handleInputChange}
-                                disabled={!isEditMode}
-                              />
+                            <Form.Group controlId="formState" className="mb-3 form-group-modern">
+                                <Form.Label><FaMapMarkerAlt className="me-2 text-primary" />State</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="state"
+                                  value={editFormData.state || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                />
                             </Form.Group>
                           </Col>
                           <Col md={4}>
-                            <Form.Group controlId="formCity" className="mb-3">
-                              <Form.Label>City</Form.Label>
-                              <Form.Control
-                                type="text"
-                                name="city"
-                                value={editFormData.city || ''}
-                                onChange={handleInputChange}
-                                disabled={!isEditMode}
-                              />
+                            <Form.Group controlId="formCity" className="mb-3 form-group-modern">
+                                <Form.Label><FaMapPin className="me-2 text-primary" />City</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="city"
+                                  value={editFormData.city || ''}
+                                  onChange={handleInputChange}
+                                  disabled={!isEditMode}
+                                  className={isEditMode ? "form-control-modern" : "form-control-readonly"}
+                                />
                             </Form.Group>
                           </Col>
                         </Row>
                       </Form>
-                    </Tab>
+                    </div>
+                  )}
 
-                    <Tab eventKey="professional" title={
-                      <span className="tab-style">
+                  {/* Professional Information Tab */}
+                  {activeTab === "professional" && (
+                    <div>
+                      <h4 className="mb-4">
+                        <FaBriefcase className="me-2 text-primary" />
                         Professional Information
-                      </span>
-                    }>
+                      </h4>
                       <Form onSubmit={handleSaveProfile}>
-                        <Form.Group controlId="formIntroduction" className="mb-3">
-                          <Form.Label>Introduction</Form.Label>
+                        <Form.Group controlId="formIntroduction" className="mb-3 form-group-modern">
+                          <Form.Label><FaFileAlt className="me-2 text-primary" />Introduction</Form.Label>
                           <Form.Control
                             as="textarea"
                             rows={4}
@@ -706,11 +877,12 @@ const UserProfile = () => {
                             value={editFormData.introduction || ''}
                             onChange={handleInputChange}
                             disabled={!isEditMode}
+                            className={isEditMode ? "form-control-modern" : "form-control-readonly"}
                           />
                         </Form.Group>
 
-                        <Form.Group controlId="formTalentScope" className="mb-3">
-                          <Form.Label>Talent Scope</Form.Label>
+                        <Form.Group controlId="formTalentScope" className="mb-3 form-group-modern">
+                          <Form.Label><FaTrophy className="me-2 text-primary" />Talent Scope</Form.Label>
                           {isEditMode ? (
                             <div>
                               {editFormData.talent_scope && editFormData.talent_scope.map((talent, index) => (
@@ -719,6 +891,7 @@ const UserProfile = () => {
                                     type="text"
                                     value={talent}
                                     onChange={(e) => handleArrayFieldChange('talent_scope', index, e.target.value)}
+                                    className="form-control-modern"
                                   />
                                   <Button
                                     variant="outline-danger"
@@ -739,11 +912,13 @@ const UserProfile = () => {
                           ) : (
                             <div>
                               {userData?.talent_scope && userData.talent_scope.length > 0 ? (
-                                userData.talent_scope.map((talent, index) => (
-                                  <Badge key={index} bg="secondary" className="me-2 mb-2">
-                                    {talent}
-                                  </Badge>
-                                ))
+                                <div className="d-flex flex-wrap">
+                                  {userData.talent_scope.map((talent, index) => (
+                                    <Badge key={index} bg="secondary" className="me-2 mb-2">
+                                      {talent}
+                                    </Badge>
+                                  ))}
+                                </div>
                               ) : (
                                 <p className="text-muted">No talents added</p>
                               )}
@@ -751,16 +926,19 @@ const UserProfile = () => {
                           )}
                         </Form.Group>
                       </Form>
-                    </Tab>
+                    </div>
+                  )}
 
-                    <Tab eventKey="social" title={
-                      <span className="tab-style">
+                  {/* Social Media Tab */}
+                  {activeTab === "social" && (
+                    <div>
+                      <h4 className="mb-4">
+                        <FaLink className="me-2 text-primary" />
                         Social Media
-                      </span>
-                    }>
+                      </h4>
                       <Form onSubmit={handleSaveProfile}>
-                        <Form.Group controlId="formSocialMediaLinks" className="mb-3">
-                          <Form.Label>Social Media Links</Form.Label>
+                        <Form.Group controlId="formSocialMediaLinks" className="mb-3 form-group-modern">
+                          <Form.Label><FaLinkedin className="me-2 text-primary" />Social Media Links</Form.Label>
                           {isEditMode ? (
                             <div>
                               {editFormData.social_media_link && editFormData.social_media_link.map((link, index) => (
@@ -770,6 +948,7 @@ const UserProfile = () => {
                                     value={link}
                                     onChange={(e) => handleArrayFieldChange('social_media_link', index, e.target.value)}
                                     placeholder="https://example.com"
+                                    className="form-control-modern"
                                   />
                                   <Button
                                     variant="outline-danger"
@@ -792,7 +971,7 @@ const UserProfile = () => {
                               {userData?.social_media_link && userData.social_media_link.length > 0 ? (
                                 userData.social_media_link.map((link, index) => (
                                   <div key={index} className="mb-2">
-                                    <a href={link} target="_blank" rel="noopener noreferrer">
+                                    <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary">
                                       {link} <FaExternalLinkAlt className="ms-1" />
                                     </a>
                                   </div>
@@ -804,8 +983,8 @@ const UserProfile = () => {
                           )}
                         </Form.Group>
 
-                        <Form.Group controlId="formAdditionalLinks" className="mb-3">
-                          <Form.Label>Additional Links</Form.Label>
+                        <Form.Group controlId="formAdditionalLinks" className="mb-3 form-group-modern">
+                          <Form.Label><FaExternalLinkAlt className="me-2 text-primary" />Additional Links</Form.Label>
                           {isEditMode ? (
                             <div>
                               {editFormData.additional_link && editFormData.additional_link.map((link, index) => (
@@ -815,6 +994,7 @@ const UserProfile = () => {
                                     value={link}
                                     onChange={(e) => handleArrayFieldChange('additional_link', index, e.target.value)}
                                     placeholder="https://example.com"
+                                    className="form-control-modern"
                                   />
                                   <Button
                                     variant="outline-danger"
@@ -837,7 +1017,7 @@ const UserProfile = () => {
                               {userData?.additional_link && userData.additional_link.length > 0 ? (
                                 userData.additional_link.map((link, index) => (
                                   <div key={index} className="mb-2">
-                                    <a href={link} target="_blank" rel="noopener noreferrer">
+                                    <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary">
                                       {link} <FaExternalLinkAlt className="ms-1" />
                                     </a>
                                   </div>
@@ -849,8 +1029,8 @@ const UserProfile = () => {
                           )}
                         </Form.Group>
 
-                        <Form.Group controlId="formPortfolioLinks" className="mb-3">
-                          <Form.Label>Portfolio Links</Form.Label>
+                        <Form.Group controlId="formPortfolioLinks" className="mb-3 form-group-modern">
+                          <Form.Label><FaBriefcase className="me-2 text-primary" />Portfolio Links</Form.Label>
                           {isEditMode ? (
                             <div>
                               {editFormData.portfolio_link && editFormData.portfolio_link.map((link, index) => (
@@ -860,6 +1040,7 @@ const UserProfile = () => {
                                     value={link}
                                     onChange={(e) => handleArrayFieldChange('portfolio_link', index, e.target.value)}
                                     placeholder="https://example.com"
+                                    className="form-control-modern"
                                   />
                                   <Button
                                     variant="outline-danger"
@@ -882,7 +1063,7 @@ const UserProfile = () => {
                               {userData?.portfolio_link && userData.portfolio_link.length > 0 ? (
                                 userData.portfolio_link.map((link, index) => (
                                   <div key={index} className="mb-2">
-                                    <a href={link} target="_blank" rel="noopener noreferrer">
+                                    <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary">
                                       {link} <FaExternalLinkAlt className="ms-1" />
                                     </a>
                                   </div>
@@ -894,94 +1075,374 @@ const UserProfile = () => {
                           )}
                         </Form.Group>
                       </Form>
-                    </Tab>
+                    </div>
+                  )}
 
-                    <Tab eventKey="documents" title={
-                      <span className="tab-style">
+                  {/* Documents Tab */}
+                  {activeTab === "documents" && (
+                    <div>
+                      <h4 className="mb-4">
+                        <FaFileAlt className="me-2 text-primary" />
                         Documents & Certificates
-                      </span>
-                    }>
-                      <div className="mb-3">
-                        {isEditMode ? (
-                          <div>
-                            <Form.Group className="mb-3">
-                              <Form.Label>Select Document Type to Upload</Form.Label>
-                              <DropdownButton
-                                id="document-type-dropdown"
-                                title={selectedDocumentType ? 
-                                  documentTypes.find(type => type.key === selectedDocumentType)?.label : 
-                                  "Select Document Type"
-                                }
-                                onSelect={handleDocumentTypeSelect}
-                                className="mb-3"
-                              >
-                                {documentTypes.map(type => (
-                                  <Dropdown.Item key={type.key} eventKey={type.key}>
-                                    {type.label}
-                                  </Dropdown.Item>
-                                ))}
-                              </DropdownButton>
-                              
-                              {selectedDocumentType && (
-                                <Form.Group controlId={`form${selectedDocumentType}`} className="mb-3">
-                                  <Form.Label>
-                                    {documentTypes.find(type => type.key === selectedDocumentType)?.label}
-                                  </Form.Label>
-                                  <Form.Control
-                                    type="file"
-                                    onChange={(e) => handleDocumentChange(e, selectedDocumentType)}
-                                  />
-                                  {documentExists(selectedDocumentType) && (
-                                    <div className="mt-2">
-                                      <small className="text-muted">
-                                        Current file: {userData[selectedDocumentType]}
-                                      </small>
-                                    </div>
-                                  )}
-                                </Form.Group>
-                              )}
-                            </Form.Group>
-                          </div>
-                        ) : (
-                          <div>
-                            <h5 className="mb-3">Uploaded Documents</h5>
-                            {documentTypes.filter(type => documentExists(type.key)).length > 0 ? (
-                              <ListGroup>
-                                {documentTypes.filter(type => documentExists(type.key)).map(type => (
-                                  <ListGroup.Item key={type.key} className="d-flex justify-content-between align-items-center">
-                                    <div>
-                                      <FaFileAlt className="me-2" />
-                                      {type.label}
-                                    </div>
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      href={getDocumentUrl(userData[type.key])}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <FaExternalLinkAlt className="me-1" /> View
-                                    </Button>
-                                  </ListGroup.Item>
-                                ))}
-                              </ListGroup>
-                            ) : (
-                              <p className="text-muted">No documents uploaded</p>
+                      </h4>
+                      {isEditMode ? (
+                        <div>
+                          <Form.Group className="mb-3 form-group-modern">
+                            <Form.Label><FaUpload className="me-2 text-primary" />Select Document Type to Upload</Form.Label>
+                            <DropdownButton
+                              id="document-type-dropdown"
+                              title={selectedDocumentType ? 
+                                documentTypes.find(type => type.key === selectedDocumentType)?.label : 
+                                "Select Document Type"
+                              }
+                              onSelect={handleDocumentTypeSelect}
+                              className="mb-3 document-dropdown"
+                            >
+                              {documentTypes.map(type => (
+                                <Dropdown.Item key={type.key} eventKey={type.key}>
+                                  {type.icon && <span className="me-2 text-primary">{type.icon}</span>}
+                                  {type.label}
+                                </Dropdown.Item>
+                              ))}
+                            </DropdownButton>
+                            
+                            {selectedDocumentType && (
+                              <Form.Group controlId={`form${selectedDocumentType}`} className="mb-3 form-group-modern">
+                                <Form.Label>
+                                  {documentTypes.find(type => type.key === selectedDocumentType)?.icon && 
+                                    <span className="me-2 text-primary">
+                                      {documentTypes.find(type => type.key === selectedDocumentType)?.icon}
+                                    </span>
+                                  }
+                                  {documentTypes.find(type => type.key === selectedDocumentType)?.label}
+                                </Form.Label>
+                                <Form.Control
+                                  type="file"
+                                  onChange={(e) => handleDocumentChange(e, selectedDocumentType)}
+                                  className="form-control-modern"
+                                />
+                                {documentExists(selectedDocumentType) && (
+                                  <div className="mt-2">
+                                    <small className="text-muted">
+                                      Current file: {userData[selectedDocumentType]}
+                                    </small>
+                                  </div>
+                                )}
+                              </Form.Group>
                             )}
-                          </div>
-                        )}
-                      </div>
-                    </Tab>
-                  </Tabs>
+                          </Form.Group>
+                        </div>
+                      ) : (
+                        <div>
+                          {documentTypes.filter(type => documentExists(type.key)).length > 0 ? (
+                            <ListGroup className="document-list">
+                              {documentTypes.filter(type => documentExists(type.key)).map(type => (
+                                <ListGroup.Item key={type.key} className="d-flex justify-content-between align-items-center document-item">
+                                  <div>
+                                    {type.icon && <span className="me-2 text-primary">{type.icon}</span>}
+                                    {type.label}
+                                  </div>
+                                  <div>
+                                    <OverlayTrigger
+                                      placement="top"
+                                      overlay={<Tooltip>View Document</Tooltip>}
+                                    >
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        href={getDocumentUrl(userData[type.key])}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="me-2"
+                                      >
+                                        <FaEye />
+                                      </Button>
+                                    </OverlayTrigger>
+                                    <OverlayTrigger
+                                      placement="top"
+                                      overlay={<Tooltip>Download Document</Tooltip>}
+                                    >
+                                      <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        href={getDocumentUrl(userData[type.key])}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        download
+                                      >
+                                        <FaDownload />
+                                      </Button>
+                                    </OverlayTrigger>
+                                  </div>
+                                </ListGroup.Item>
+                              ))}
+                            </ListGroup>
+                          ) : (
+                            <div className="text-center py-4">
+                              <FaFileAlt className="text-muted mb-3" style={{ fontSize: '3rem' }} />
+                              <p className="text-muted">No documents uploaded</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Card.Body>
               </Card>
             </Col>
-          </div>
+          </Row>
         </Container>
-          <FooterDashBoard />
+        <FooterDashBoard />
       </div>
+
+      <style jsx>{`
+        .dashboard-body {
+          padding: 20px !important;
+        }
+        
+        .profile-info-card {
+          border-radius: 12px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+          margin-bottom: 1rem;
+        }
+        
+        .profile-info-card:hover {
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .profile-content-card {
+          border-radius: 12px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        
+        .profile-content-card:hover {
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .profile-header-section {
+          background-color: #f8f9fa;
+          border-bottom: 1px solid #e9ecef;
+        }
+        
+        .profile-photo-wrapper {
+          position: relative;
+        }
+        
+        .profile-photo {
+          width: 120px;
+          height: 120px;
+          border: 4px solid white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          background-color: #f8f9fa;
+        }
+        
+        .profile-photo-edit {
+          position: absolute;
+          bottom: 5px;
+          right: 5px;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: #007bff;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .profile-photo-edit:hover {
+          background-color: #0069d9;
+          transform: scale(1.1);
+        }
+        
+        .profile-name {
+          font-weight: 600;
+          font-size: 1.2rem;
+          margin-bottom: 8px;
+        }
+        
+        .profile-role {
+          font-size: 0.8rem;
+          padding: 5px 10px;
+        }
+        
+        .profile-stats {
+          display: flex;
+          justify-content: space-around;
+          padding: 15px 0;
+          margin: 15px 0;
+        }
+        
+        .profile-stats h6 {
+          font-weight: 600;
+          font-size: 1rem;
+        }
+        
+        .profile-completion {
+          margin: 15px 0;
+        }
+        
+        .profile-actions {
+          margin-top: 15px;
+        }
+        
+        .profile-tabs {
+          border-bottom: none;
+          background-color: #f8f9fa;
+          padding: 10px 0;
+        }
+        
+        .profile-tabs .nav-link {
+          border: none;
+          border-radius: 8px;
+          margin-right: 5px;
+          color: #6c757d;
+          font-weight: 500;
+          transition: all 0.2s ease;
+          padding: 8px 16px;
+        }
+        
+        .profile-tabs .nav-link:hover {
+          background-color: #e9ecef;
+        }
+        
+        .profile-tabs .nav-link.active {
+          background-color: #007bff;
+          color: white;
+        }
+        
+        .form-group-modern {
+          margin-bottom: 1.5rem;
+        }
+        
+        .form-group-modern label {
+          font-weight:  500;
+          margin-bottom: 0.5rem;
+          color: #495057;
+        }
+        
+        .form-control-modern {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 10px 15px;
+          transition: all 0.2s ease;
+        }
+        
+        .form-control-modern:focus {
+          border-color: #007bff;
+          box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        .form-control-readonly {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 10px 15px;
+          background-color: #f8f9fa;
+          color: #6c757d;
+        }
+        
+        .document-dropdown .dropdown-toggle {
+          border-radius: 8px;
+          border: 1px solid #e0e0e0;
+          padding: 10px 15px;
+          font-weight: 500;
+        }
+        
+        .document-list {
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        
+        .document-item {
+          border: 1px solid #e0e0e0;
+          padding: 15px;
+          transition: all 0.2s ease;
+        }
+        
+        .document-item:hover {
+          background-color: #f8f9fa;
+        }
+        
+        .btn-edit-profile {
+          border-radius: 8px;
+          padding: 8px 16px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+        
+        .btn-edit-profile:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .page-header {
+          margin-bottom: 2rem;
+        }
+        
+        .page-title {
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+        
+        .alert-dismissible .btn-close {
+          padding: 0.75rem 1rem;
+        }
+        
+        .text-primary {
+          color: #007bff !important;
+        }
+        
+        @media (max-width: 991px) {
+          .profile-info-card {
+            margin-bottom: 1rem;
+          }
+          
+          .profile-photo {
+            width: 100px;
+            height: 100px;
+          }
+          
+          .profile-stats {
+            padding: 10px 0;
+          }
+          
+          .profile-stats h6 {
+            font-size: 0.8rem;
+          }
+          
+          .profile-nav .nav-item {
+            padding: 10px 15px;
+            font-size: 0.9rem;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .profile-nav .nav-item {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+          }
+          
+          .profile-photo {
+            width: 80px;
+            height: 80px;
+          }
+          
+          .profile-stats {
+            padding: 8px 0;
+          }
+          
+          .profile-stats h6 {
+            font-size: 0.8rem;
+          }
+        }
+      `}</style>
     </div>
   );
 };
 
-export default UserProfile;
+export default UserProfile; 

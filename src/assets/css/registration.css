@@ -122,14 +122,15 @@
 /* Form Styles */
 .form-label-custom {
   font-weight: 600;
-  color: #495057;
+  color: #000;
   margin-bottom: 0.5rem;
 }
 
 .form-control-custom {
-  border-radius: 0.5rem;
+  border-radius: 8px;
   border: 1px solid #ced4da;
-  padding: 0.75rem;
+  padding: 14px;
+  font-size: 12px;
   transition: all 0.3s ease;
 }
 
@@ -217,10 +218,12 @@
 
 /* Dropdown Styles */
 .dropdown-custom {
-  border-radius: 0.5rem;
-  border: 1px solid #ced4da;
-  padding: 0.75rem;
-  transition: all 0.3s ease;
+ border-radius: 0.5rem;
+    border: 1px solid #ced4da;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+    text-align: justify;
+    width: 573px;
 }
 
 .dropdown-custom:focus {

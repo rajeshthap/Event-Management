@@ -57,9 +57,24 @@ const RegistrationPreview = ({
     return field !== undefined && field !== null && field !== '';
   };
 
+  // Get current date for display
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  // Get current time for display
+  const getCurrentTime = () => {
+    return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <>
-      <div className="government-form-preview">
+      <div className="government-form-preview position-relative">
+        {/* Watermark */}
+        <div className="watermark">
+          BrEvent.com
+        </div>
+        
         {/* Official Header with Emblem */}
         <div className="official-header text-center py-4 border-bottom border-dark">
           <div className="d-flex justify-content-center mb-3">
@@ -69,6 +84,10 @@ const RegistrationPreview = ({
             <div className="text-start">
               <p className="mb-0">REGISTRATION FORM</p>
             </div>
+          </div>
+          {/* Current Date and Time Display */}
+          <div className="current-date mt-2">
+            <p className="mb-0 small font-weight-bold">Date: {getCurrentDate()} | Time: {getCurrentTime()}</p>
           </div>
         </div>
 
@@ -99,10 +118,11 @@ const RegistrationPreview = ({
             
               <p className="mb-0 small">Dehradun, Uttarakhand</p>
             
-              <p className="mb-0 small font-weight-bold">Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              {/* Additional date and time display in the main content */}
+              <p className="mb-0 small font-weight-bold">Application Date: {getCurrentDate()} | Time: {getCurrentTime()}</p>
             </div>
             <div className="photo-section ms-3">
-              <label className="form-label font-weight-bold">Place Your Current Photo</label>
+              <label className="form-label font-weight-bold">Place Your Current photo</label>
               {formData.profile_image_preview ? (
                 <Image
                   src={formData.profile_image_preview}
@@ -120,9 +140,9 @@ const RegistrationPreview = ({
 
           {/* OJT REGISTRATION FORM Title */}
           <div className="text-center mb-4">
-            <h4 className="mb-3 font-weight-bold"> REGISTRATION FORM</h4>
+         
             <div className="d-flex align-items-center mb-3">
-              <span className="me-2 font-weight-bold">APPLICATION FOR Event</span>
+              <span className="me-2 font-weight-bold">APPLICATION FOR EVENT</span>
               <div className="border-bottom flex-grow-1"></div>
             </div>
           </div>
@@ -142,8 +162,6 @@ const RegistrationPreview = ({
                   <div className="form-control-static">{formData.full_name}</div>
                 </div>
               </div>
-              
-           
               
               {/* Address - Always show as it's required */}
               <div className="row mb-3">
@@ -383,7 +401,7 @@ const RegistrationPreview = ({
               <div className="section-content border border-top-0 p-3">
                 <div className="table-responsive">
                   <table className="table table-bordered">
-                    <thead>
+                    <thead className=''>
                       <tr>
                         <th width="30%">Certificate Type</th>
                         <th>Preview</th>
@@ -440,11 +458,22 @@ const RegistrationPreview = ({
             </div>
           )}
         </div>
+        
+        {/* Footer with date, time, and website link */}
+        <div className="form-footer p-3 text-center border-top">
+          <p className="mb-0 small">Generated on {getCurrentDate()} at {getCurrentTime()}</p>
+          <p className="mb-0 small mt-1">Visit us at: <a href="http://localhost:3000/eventmanagement/" target="_blank" rel="noopener noreferrer">http://localhost:3000/eventmanagement/</a></p>
+        </div>
       </div>
 
       {/* Full-screen Certificate Preview */}
       {fullscreenPreview.isOpen && (
         <div className="fullscreen-certificate-preview position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-90 d-flex flex-column z-index-9999">
+          {/* Watermark for fullscreen preview */}
+          <div className="watermark-fullscreen">
+            BrEvent.com
+          </div>
+          
           <div className="d-flex justify-content-between align-items-center p-3 bg-white">
             <h4 className="mb-0">{fullscreenPreview.certificateLabel}</h4>
             <div>
@@ -486,6 +515,61 @@ const RegistrationPreview = ({
           background-color: #f8f9fa;
           margin: 0 auto;
           box-shadow: 0 0 15px rgba(0,0,0,0.1);
+          position: relative;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .preview-actions {
+        padding: 12px;
+        }
+        .form-content {
+          flex-grow: 1;
+        
+        }
+        
+        .form-footer {
+          background-color: #f5f5f5;
+          margin-top: auto;
+        }
+       
+        .form-footer a {
+          color: #007bff;
+          text-decoration: none;
+        }
+        
+        .form-footer a:hover {
+          text-decoration: underline;
+        }
+        
+        /* Watermark styling */
+        .watermark {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          font-size: 150px;
+          color: rgba(0, 0, 0, 0.1);
+          font-weight: bold;
+          pointer-events: none;
+          z-index: 1;
+          white-space: nowrap;
+          user-select: none;
+        }
+        
+        /* Watermark for fullscreen preview */
+        .watermark-fullscreen {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          font-size: 5rem;
+          color: rgba(255, 255, 255, 0.15);
+          font-weight: bold;
+          pointer-events: none;
+          z-index: 1;
+          white-space: nowrap;
+          user-select: none;
         }
         
         @media print {
@@ -496,15 +580,102 @@ const RegistrationPreview = ({
           .form-section {
             page-break-inside: avoid;
             break-inside: avoid;
+            border: 1px solid #000 !important;
+            margin-bottom: 1rem;
           }
           
           .certificates-section {
-            page-break-before: always;
-            break-before: page;
+            page-break-before: auto;
+            break-before: auto;
           }
           
           .government-form-preview {
             box-shadow: none;
+            min-height: auto;
+            border: 1px solid #000 !important;
+          }
+          
+          /* Ensure watermark appears in print */
+          .watermark {
+            color: rgba(0, 0, 0, 0.05) !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure footer appears in print */
+          .form-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-top: 1px solid #000 !important;
+          }
+          
+          /* Ensure link appears in print */
+          .form-footer a:after {
+            content: " (http://localhost:3000/eventmanagement/)";
+            font-size: 0.8em;
+          }
+          
+          /* Ensure all borders show in print */
+          .border, .border-top, .border-bottom, .border-start, .border-end {
+            border-color: #000 !important;
+            border-style: solid !important;
+            border-width: 1px !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure table borders show in print */
+          .table, .table th, .table td {
+            border: 1px solid #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure certificate preview shows properly in print */
+          .certificate-preview-image {
+            max-width: 100% !important;
+            max-height: 300px !important;
+            page-break-inside: avoid;
+          }
+          
+          /* Ensure section headers show properly in print */
+          .section-header {
+            background-color: #f5f5f5 !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            border: 1px solid #000 !important;
+          }
+          
+          /* Ensure section content shows properly in print */
+          .section-content {
+            border: 1px solid #000 !important;
+            border-top: none !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure form control static shows properly in print */
+          .form-control-static {
+            border-bottom: 1px dotted #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure photo placeholder shows properly in print */
+          .photo-placeholder {
+            border: 1px solid #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure PDF preview shows properly in print */
+          .pdf-preview {
+            border: 1px solid #000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
         
@@ -541,8 +712,8 @@ const RegistrationPreview = ({
         }
         
         .certificates-section {
-          page-break-before: always;
-          break-before: page;
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
         
         .section-header {
@@ -608,6 +779,10 @@ const RegistrationPreview = ({
           display: flex;
           flex-direction: column;
           align-items: center;
+        }
+        
+        .current-date {
+          font-size: 1rem;
         }
       `}</style>
     </>

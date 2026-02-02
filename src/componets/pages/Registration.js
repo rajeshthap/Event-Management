@@ -1652,7 +1652,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
         </div>
       </div>
       
-      <div className='container box-shadow'>
+      <div className='container box-shadow-reg'>
         <main className="main">
           <section id="registration" className="registration section-registration section-gallery">
             <div className="container" data-aos="fade-up" data-aos-delay="100">
@@ -1668,7 +1668,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                     <ProgressBar animated now={100} className="mt-3" />
                   </div>
                 ) : (
-                  <div className="registration-form-container p-4">
+                  <div className="registration-form-container p-3">
                     <h3 className="mb-4">User Registration</h3>
                     <Form onSubmit={handlePreviewClick}>
                       {apiError && <Alert variant="danger">{apiError}</Alert>}
@@ -1740,7 +1740,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                                     src={formData.profile_image_preview}
                                     alt="Profile Preview"
                                     roundedCircle
-                                    style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+                                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                                   />
                                   <Button
                                     variant="danger"
@@ -1791,7 +1791,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                       
                       {/* Full Name and Gender */}
                       <Row>
-                        <Col md={8}>
+                        <Col md={6}>
                           <Form.Group className="mb-3">
                             <Form.Label className="form-label-custom">Full Name <span className="star">*</span></Form.Label>
                             <Form.Control
@@ -1850,8 +1850,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             )}
                           </Form.Group>
                         </Col>
-                      </Row>
-
+                    
+<Col lg={6}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Email Address<span className="star">*</span></Form.Label>
                         <div className="d-flex align-items-center">
@@ -1912,9 +1912,9 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </Alert>
                         )}
                       </Form.Group>
-
-                      <Row>
-                        <Col md={6}>
+</Col>
+                  
+                     <Col lg={6} md={6} sm={12}>
                           <Form.Group className="mb-3">
                             <Form.Label className="form-label-custom">Password <span className="star">*</span></Form.Label>
                             <Form.Control
@@ -1931,7 +1931,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             </Form.Control.Feedback>
                           </Form.Group>
                         </Col>
-                        <Col md={6}>
+                       <Col lg={6} md={6} sm={12}>
                           <Form.Group className="mb-3">
                             <Form.Label className="form-label-custom">Confirm Password<span className="star">*</span></Form.Label>
                             <Form.Control
@@ -1948,7 +1948,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             </Form.Control.Feedback>
                           </Form.Group>
                         </Col>
-                      </Row>
+                    <Col lg={6} md={6} sm={12}>
 
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Talent Scope <span className="star">*</span></Form.Label>
@@ -1981,8 +1981,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         )}
                       </Form.Group>
-
-                      <Row>
+</Col>
+                  
                         {/* Date of Birth (only for individual) */}
                         {formData.user_type === 'individual' && (
                           <Col md={6}>
@@ -2027,8 +2027,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             )}
                           </Form.Group>
                         </Col>
-                      </Row>
-
+                     
+ <Col lg={6} md={6} sm={12}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Social Media Links </Form.Label>
                         {formData.social_media_links.map((link, index) => (
@@ -2052,7 +2052,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         ))}
                         <Button
-                          variant="outline-primary"
+                          variant="outline-primary link-add"
                           size="sm"
                           onClick={addSocialMediaLink}
                           className="mt-2"
@@ -2065,7 +2065,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         )}
                       </Form.Group>
-
+                      </Col>
+ <Col lg={6} md={6} sm={12}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Additional Links</Form.Label>
                         {formData.additional_links.map((link, index) => (
@@ -2090,7 +2091,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         ))}
                         <Button
-                          variant="outline-primary"
+                          variant="outline-primary link-add"
                           size="sm"
                           onClick={addAdditionalLink}
                           className="mt-2"
@@ -2103,7 +2104,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         )}
                       </Form.Group>
-
+</Col>
+<Col lg={6}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Portfolio Links</Form.Label>
                         {formData.portfolio_links.map((link, index) => (
@@ -2128,7 +2130,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         ))}
                         <Button
-                          variant="outline-primary"
+                          variant="outline-primary link-add"
                           size="sm"
                           onClick={addPortfolioLink}
                           className="mt-2"
@@ -2141,9 +2143,10 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         )}
                       </Form.Group>
+                      </Col>
 
-                      <Row>
-                        <Col md={4}>
+                     
+                          <Col md={4} lg={6}>
                           <Form.Group className="mb-3">
                             <Form.Label className="form-label-custom">Country <span className="star">*</span></Form.Label>
                             <Form.Control
@@ -2160,7 +2163,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             </Form.Control.Feedback>
                           </Form.Group>
                         </Col>
-                        <Col md={4}>
+                                              <Col md={4} lg={6}>
+
                           <Form.Group className="mb-3">
                             <Form.Label className="form-label-custom">State <span className="star">*</span></Form.Label>
                             <Form.Control
@@ -2177,7 +2181,7 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             </Form.Control.Feedback>
                           </Form.Group>
                         </Col>
-                        <Col md={4}>
+                      <Col md={4} lg={6}>
                           <Form.Group className="mb-3">
                             <Form.Label className="form-label-custom">City <span className="star">*</span></Form.Label>
                             <Form.Control
@@ -2194,8 +2198,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                             </Form.Control.Feedback>
                           </Form.Group>
                         </Col>
-                      </Row>
-
+                   
+<Col lg={6}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Address <span className="star">*</span></Form.Label>
                         <Form.Control
@@ -2211,7 +2215,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           {errors.address}
                         </Form.Control.Feedback>
                       </Form.Group>
-
+                      </Col>
+  <Col lg={6}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Introduction <span className="star">*</span></Form.Label>
                         <Form.Control
@@ -2236,8 +2241,9 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </small>
                         </div>
                       </Form.Group>
-
+</Col>
                       {/* Certificate Selection and Upload */}
+                      <Col lg={6}>
                       <Form.Group className="mb-3">
                         <Form.Label className="form-label-custom">Certificates</Form.Label>
                         <Dropdown autoClose="outside">
@@ -2266,7 +2272,8 @@ const Registration = ({ email: propEmail, onRegistrationSuccess, fromEvent = fal
                           </div>
                         )}
                       </Form.Group>
-
+                      </Col>
+ </Row>
                       {/* Certificate File Uploads */}
                       {formData.selected_certificates.map(certificateId => {
                         const option = certificateOptions.find(opt => opt.id === certificateId);
