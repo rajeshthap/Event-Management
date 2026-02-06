@@ -14,14 +14,6 @@ const defaultStats = [
   { value: "Venue", label: "125 Innovation Boulevard, Chicago" }
 ];
 
-// Default event to use for all slides
-const defaultEvent = { 
-  day: "15", 
-  month: "NOV", 
-  title: "Spring Semester Open House", 
-  description: "Join us to explore campus." 
-};
-
 // Default image to use when API doesn't provide one
 const defaultImages = [Showcase, Slide2Image, Slide3Image];
 
@@ -74,7 +66,7 @@ function EventCarousel() {
               image: imageUrl,
               description: item.description || "",
               stats: defaultStats, // We'll update this with event data
-              event: defaultEvent // We'll update this with event data
+              event: null // We'll update this with event data
             };
           });
           
@@ -95,7 +87,7 @@ function EventCarousel() {
             image: Showcase,
             description: "Default description for fallback carousel item.",
             stats: defaultStats,
-            event: defaultEvent
+            event: null
           }
         ]);
       }
@@ -275,24 +267,24 @@ function EventCarousel() {
                 </div>
               </div>
 
-              <div className="upcoming-event" data-aos="fade-up">
-                <div className="container">
-                  <div className="event-content">
-                    <div className="event-date">
-                      <span className="day">{slide.event.day}</span>
-                      <span className="month">{slide.event.month}</span>
-                    </div>
-                    <div className="event-info">
-                      <h3>{slide.event.title}</h3>
-                      <p>{slide.event.description}</p>
-                    </div>
-                    <div className="event-action">
-                      <a href="#" className="btn-event">RSVP Now</a>
-                      <span className="countdown">Starts in 3 weeks</span>
+              {/* Only render the upcoming event section if event data exists */}
+              {slide.event && (
+                <div className="upcoming-event" data-aos="fade-up">
+                  <div className="container">
+                    <div className="event-content">
+                      <div className="event-date">
+                        <span className="day">{slide.event.day}</span>
+                        <span className="month">{slide.event.month}</span>
+                      </div>
+                      <div className="event-info">
+                        <h3>{slide.event.title}</h3>
+                        <p>{slide.event.description}</p>
+                      </div>
+                     
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </section>
           </Carousel.Item>
         ))}

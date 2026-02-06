@@ -228,6 +228,10 @@ body {
 .logo{
   font-size: 18px !important;
 }
+.trilok-submit-btn{
+  background-color: #000;
+  border: 1px solid #000;
+}
 .box-shadow-reg {
     background-color: #fff;
     border-radius: 16px;

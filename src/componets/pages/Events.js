@@ -63,11 +63,11 @@ function Events() {
     fetchEvents();
   }, []);
 
-  // Updated checkUserExists to return user ID
+  // Updated checkUserExists to return user ID and verification status
   const checkUserExists = async (email) => {
     if (!email) {
       setError('Please enter your email address');
-      return { exists: false, userId: null };
+      return { exists: false, userId: null, isVerified: false };
     }
 
     setCheckingUser(true);
@@ -86,7 +86,8 @@ function Events() {
       if (!response.ok) {
         if (response.status === 404) {
           setUserId(null);
-          return { exists: false, userId: null };
+          setUserVerified(false);
+          return { exists: false, userId: null, isVerified: false };
         }
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
@@ -102,104 +103,110 @@ function Events() {
       
       if (data.user_id) {
         setUserId(data.user_id);
-        setUserVerified(true);
-        return { exists: true, userId: data.user_id };
+        // Check if user is verified
+        const isUserVerified = data.is_verified === true;
+        setUserVerified(isUserVerified);
+        
+        return { 
+          exists: true, 
+          userId: data.user_id, 
+          isVerified: isUserVerified 
+        };
       } else {
         setUserId(null);
         setUserVerified(false);
-        return { exists: false, userId: null };
+        return { exists: false, userId: null, isVerified: false };
       }
     } catch (err) {
       console.error('Error checking user:', err);
       setError('Error checking user: ' + err.message);
-      return { exists: false, userId: null };
+      return { exists: false, userId: null, isVerified: false };
     } finally {
       setCheckingUser(false);
     }
   };
 
   // FIXED: Updated registerForEvent function with proper error handling
- // FIXED: Updated registerForEvent function with proper error handling
-const registerForEvent = async (eventId, userIdParam = null) => {
-  const currentUserId = userIdParam || userId;
-  
-  if (!currentUserId) {
-    setShowEmailModal(true);
-    setPendingEventId(eventId);
-    return;
-  }
-
-  setRegisteringForEvent(eventId);
-  setRegistrationMessage('');
-
-  try {
-    const payload = {
-      event_id: eventId,
-      user_id: currentUserId
-    };
+  const registerForEvent = async (eventId, userIdParam = null) => {
+    const currentUserId = userIdParam || userId;
     
-    console.log('Sending registration payload:', payload);
-    
-    const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      mode: 'cors',
-      body: JSON.stringify(payload)
-    });
+    if (!currentUserId) {
+      setShowEmailModal(true);
+      setPendingEventId(eventId);
+      return;
+    }
 
-    const responseText = await response.text();
-    let data;
-    
+    setRegisteringForEvent(eventId);
+    setRegistrationMessage('');
+
     try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Registration response is not valid JSON:', responseText.substring(0, 200));
-      throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
-    }
-    
-    console.log('Registration response:', data);
-    
-    if (!response.ok) {
-      let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-      if (data.message) {
-        errorMessage = data.message;
-      } else if (data.error) {
-        errorMessage = data.error;
-      } else if (data.detail) {
-        errorMessage = data.detail;
-      } else if (data.non_field_errors) {
-        errorMessage = Array.isArray(data.non_field_errors) 
-          ? data.non_field_errors.join(', ') 
-          : data.non_field_errors;
+      const payload = {
+        event_id: eventId,
+        user_id: currentUserId
+      };
+      
+      console.log('Sending registration payload:', payload);
+      
+      const response = await fetch('https://mahadevaaya.com/eventmanagement/eventmanagement_backend/api/event-participant/', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors',
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Registration response is not valid JSON:', responseText.substring(0, 200));
+        throw new Error('API returned HTML instead of JSON. Check the endpoint URL and server configuration.');
       }
-      throw new Error(errorMessage);
+      
+      console.log('Registration response:', data);
+      
+      if (!response.ok) {
+        let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.non_field_errors) {
+          errorMessage = Array.isArray(data.non_field_errors) 
+            ? data.non_field_errors.join(', ') 
+            : data.non_field_errors;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      setRegistrationMessage('Successfully registered for the event!');
+      setMessageContent('Successfully registered for the event!');
+      setShowMessageModal(true);
+      console.log('Registration successful:', data);
+    } catch (err) {
+      console.error('Error registering for event:', err);
+      
+      // Check if this is the "already participated" error
+      if (err.message && err.message.includes('You have already participated in this event')) {
+        setRegistrationMessage(err.message);
+        setMessageContent(err.message);
+      } else {
+        // For other errors, keep the prefix
+        setRegistrationMessage('Error registering for event: ' + err.message);
+        setMessageContent('Error registering for event: ' + err.message);
+      }
+      
+      setShowMessageModal(true);
+    } finally {
+      setRegisteringForEvent(null);
     }
-    
-    setRegistrationMessage('Successfully registered for the event!');
-    setMessageContent('Successfully registered for the event!');
-    setShowMessageModal(true);
-    console.log('Registration successful:', data);
-  } catch (err) {
-    console.error('Error registering for event:', err);
-    
-    // Check if this is the "already participated" error
-    if (err.message && err.message.includes('You have already participated in this event')) {
-      setRegistrationMessage(err.message);
-      setMessageContent(err.message);
-    } else {
-      // For other errors, keep the prefix
-      setRegistrationMessage('Error registering for event: ' + err.message);
-      setMessageContent('Error registering for event: ' + err.message);
-    }
-    
-    setShowMessageModal(true);
-  } finally {
-    setRegisteringForEvent(null);
-  }
-};
+  };
 
   const handleRegisterClick = (eventId) => {
     setPendingEventId(eventId);
@@ -210,7 +217,7 @@ const registerForEvent = async (eventId, userIdParam = null) => {
     }
   };
 
-  // Updated handleEmailSubmit to use the returned user ID
+  // Updated handleEmailSubmit to use the returned user ID and verification status
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     
@@ -219,16 +226,27 @@ const registerForEvent = async (eventId, userIdParam = null) => {
       return;
     }
 
-    const { exists, userId: returnedUserId } = await checkUserExists(userEmail);
+    const { exists, userId: returnedUserId, isVerified } = await checkUserExists(userEmail);
     
     if (exists) {
-      setShowEmailModal(false);
-      setMessageContent('Now you can apply for events');
-      setShowMessageModal(true);
-      
-      if (pendingEventId) {
-        registerForEvent(pendingEventId, returnedUserId);
-        setPendingEventId(null);
+      if (isVerified) {
+        setShowEmailModal(false);
+        setMessageContent('Now you can apply for events');
+        setShowMessageModal(true);
+        
+        if (pendingEventId) {
+          registerForEvent(pendingEventId, returnedUserId);
+          setPendingEventId(null);
+        }
+      } else {
+        // User exists but is not verified, redirect to registration
+        setShowEmailModal(false);
+        setMessageContent('Your account is not verified. Please complete registration.');
+        setShowMessageModal(true);
+        setTimeout(() => {
+          setShowRegistrationModal(true);
+          setIsRegistrationActive(true);
+        }, 2000); // Show message for 2 seconds before opening registration
       }
     } else {
       setShowEmailModal(false);
@@ -238,11 +256,20 @@ const registerForEvent = async (eventId, userIdParam = null) => {
   };
 
   const handleCheckEmail = async () => {
-    const { exists } = await checkUserExists(userEmail);
+    const { exists, isVerified } = await checkUserExists(userEmail);
     
     if (exists) {
-      setMessageContent('Now you can apply for events');
-      setShowMessageModal(true);
+      if (isVerified) {
+        setMessageContent('Now you can apply for events');
+        setShowMessageModal(true);
+      } else {
+        setMessageContent('Your account is not verified. Please complete registration.');
+        setShowMessageModal(true);
+        setTimeout(() => {
+          setShowRegistrationModal(true);
+          setIsRegistrationActive(true);
+        }, 2000);
+      }
     } else {
       setShowRegistrationModal(true);
     }
@@ -258,9 +285,9 @@ const registerForEvent = async (eventId, userIdParam = null) => {
     
     // Check if user exists and get the user ID
     const checkAndRegister = async () => {
-      const { exists, userId: returnedUserId } = await checkUserExists(userData.email);
+      const { exists, userId: returnedUserId, isVerified } = await checkUserExists(userData.email);
       
-      if (exists && pendingEventId) {
+      if (exists && isVerified && pendingEventId) {
         registerForEvent(pendingEventId, returnedUserId);
         setPendingEventId(null);
       }
